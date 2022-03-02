@@ -22,7 +22,6 @@ import (
 	tmflags "github.com/tendermint/tendermint/libs/cli/flags"
 	"github.com/tendermint/tendermint/libs/log"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/node"
 	tmclient "github.com/tendermint/tendermint/rpc/client"
 	dbm "github.com/tendermint/tm-db"
 	"google.golang.org/grpc"
@@ -52,6 +51,8 @@ import (
 	"github.com/tharsis/ethermint/server/config"
 	ethermint "github.com/tharsis/ethermint/types"
 	evmtypes "github.com/tharsis/ethermint/x/evm/types"
+
+	optinode "github.com/celestiaorg/optimint/node"
 
 	"github.com/tharsis/ethermint/app"
 )
@@ -173,7 +174,7 @@ type (
 		RPCClient     tmclient.Client
 		JSONRPCClient *ethclient.Client
 
-		tmNode      *node.Node
+		tmNode      *optinode.Node
 		api         *api.Server
 		grpc        *grpc.Server
 		grpcWeb     *http.Server
