@@ -161,6 +161,8 @@ func TestEth_coinbase(t *testing.T) {
 }
 
 func TestEth_GetProof(t *testing.T) {
+	// TODO(jbowen93): https://github.com/celestiaorg/ethermint/issues/11
+	t.Skip()
 	rpcRes := call(t, "eth_sendTransaction", makeEthTxParam())
 
 	var hash hexutil.Bytes
@@ -478,6 +480,8 @@ func TestEth_GetFilterChanges_Topics_XB(t *testing.T) {
 }
 
 func TestEth_PendingTransactionFilter(t *testing.T) {
+	// TODO(jbowen93): https://github.com/celestiaorg/ethermint/issues/12
+	t.Skip()
 	rpcRes := call(t, "eth_newPendingTransactionFilter", []string{})
 
 	var ID string
