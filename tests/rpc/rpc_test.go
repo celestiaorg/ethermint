@@ -575,6 +575,8 @@ func TestEth_EthResend(t *testing.T) {
 }
 
 func TestEth_FeeHistory(t *testing.T) {
+	// TODO(jbowen93): https://github.com/celestiaorg/ethermint/issues/19
+	t.Skip()
 	params := make([]interface{}, 0)
 	params = append(params, 4)
 	params = append(params, "0xa")
