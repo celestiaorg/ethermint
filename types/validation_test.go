@@ -3,9 +3,9 @@ package types
 import (
 	"testing"
 
+	"github.com/celestiaorg/ethermint/tests"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
-	"github.com/tharsis/ethermint/tests"
 )
 
 func TestIsEmptyHash(t *testing.T) {

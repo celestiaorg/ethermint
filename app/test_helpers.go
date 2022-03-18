@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/celestiaorg/ethermint/encoding"
 	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/tharsis/ethermint/encoding"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"

@@ -5,13 +5,13 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/celestiaorg/ethermint/app"
+	"github.com/celestiaorg/ethermint/encoding"
+	evmtypes "github.com/celestiaorg/ethermint/x/evm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	proto "github.com/gogo/protobuf/proto"
-	"github.com/tharsis/ethermint/app"
-	"github.com/tharsis/ethermint/encoding"
-	evmtypes "github.com/tharsis/ethermint/x/evm/types"
 
 	"github.com/stretchr/testify/require"
 

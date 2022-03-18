@@ -19,10 +19,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 
-	"github.com/tharsis/ethermint/x/feemarket/client/cli"
-	"github.com/tharsis/ethermint/x/feemarket/keeper"
-	"github.com/tharsis/ethermint/x/feemarket/simulation"
-	"github.com/tharsis/ethermint/x/feemarket/types"
+	"github.com/celestiaorg/ethermint/x/feemarket/client/cli"
+	"github.com/celestiaorg/ethermint/x/feemarket/keeper"
+	"github.com/celestiaorg/ethermint/x/feemarket/simulation"
+	"github.com/celestiaorg/ethermint/x/feemarket/types"
 )
 
 var (

@@ -8,8 +8,8 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 
+	feemarkettypes "github.com/celestiaorg/ethermint/x/feemarket/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	feemarkettypes "github.com/tharsis/ethermint/x/feemarket/types"
 )
 
 // AccountKeeper defines the expected account keeper interface

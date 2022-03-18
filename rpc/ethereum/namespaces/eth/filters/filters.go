@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"math/big"
 
-	"github.com/tharsis/ethermint/rpc/ethereum/types"
+	"github.com/celestiaorg/ethermint/rpc/ethereum/types"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/log"

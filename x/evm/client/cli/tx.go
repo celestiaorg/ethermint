@@ -12,8 +12,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	rpctypes "github.com/tharsis/ethermint/rpc/ethereum/types"
-	"github.com/tharsis/ethermint/x/evm/types"
+	rpctypes "github.com/celestiaorg/ethermint/rpc/ethereum/types"
+	"github.com/celestiaorg/ethermint/x/evm/types"
 )
 
 // GetTxCmd returns the transaction commands for this module

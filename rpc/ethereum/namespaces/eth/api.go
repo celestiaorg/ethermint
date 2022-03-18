@@ -7,7 +7,7 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/tharsis/ethermint/ethereum/eip712"
+	"github.com/celestiaorg/ethermint/ethereum/eip712"
 
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
@@ -35,11 +35,11 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/tharsis/ethermint/crypto/hd"
-	"github.com/tharsis/ethermint/rpc/ethereum/backend"
-	rpctypes "github.com/tharsis/ethermint/rpc/ethereum/types"
-	ethermint "github.com/tharsis/ethermint/types"
-	evmtypes "github.com/tharsis/ethermint/x/evm/types"
+	"github.com/celestiaorg/ethermint/crypto/hd"
+	"github.com/celestiaorg/ethermint/rpc/ethereum/backend"
+	rpctypes "github.com/celestiaorg/ethermint/rpc/ethereum/types"
+	ethermint "github.com/celestiaorg/ethermint/types"
+	evmtypes "github.com/celestiaorg/ethermint/x/evm/types"
 )
 
 // PublicAPI is the eth_ prefixed set of APIs in the Web3 JSON-RPC spec.
@@ -605,7 +605,7 @@ func (e *PublicAPI) Resend(ctx context.Context, args evmtypes.TransactionArgs, g
 	}
 
 	for _, tx := range pending {
-		// FIXME does Resend api possible at all?  https://github.com/tharsis/ethermint/issues/905
+		// FIXME does Resend api possible at all?  https://github.com/celestiaorg/ethermint/issues/905
 		p, err := evmtypes.UnwrapEthereumMsg(tx, common.Hash{})
 		if err != nil {
 			// not valid ethereum tx

@@ -3,8 +3,8 @@ package hd
 import (
 	"testing"
 
+	ethermint "github.com/celestiaorg/ethermint/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	ethermint "github.com/tharsis/ethermint/types"
 )
 
 func BenchmarkEthSecp256k1Algo_Derive(b *testing.B) {

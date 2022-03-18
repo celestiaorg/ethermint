@@ -3,12 +3,12 @@ package keeper_test
 import (
 	"math/big"
 
+	evmkeeper "github.com/celestiaorg/ethermint/x/evm/keeper"
+	evmtypes "github.com/celestiaorg/ethermint/x/evm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethparams "github.com/ethereum/go-ethereum/params"
-	evmkeeper "github.com/tharsis/ethermint/x/evm/keeper"
-	evmtypes "github.com/tharsis/ethermint/x/evm/types"
 )
 
 func (suite *KeeperTestSuite) TestCheckSenderBalance() {

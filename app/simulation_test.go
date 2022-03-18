@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	evmenc "github.com/celestiaorg/ethermint/encoding"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/cosmos/cosmos-sdk/simapp/params"
@@ -33,7 +34,6 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
-	evmenc "github.com/tharsis/ethermint/encoding"
 )
 
 // MakeEncodingConfig creates the EncodingConfig

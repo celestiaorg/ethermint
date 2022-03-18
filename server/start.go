@@ -39,9 +39,9 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ethdebug "github.com/tharsis/ethermint/rpc/ethereum/namespaces/debug"
-	"github.com/tharsis/ethermint/server/config"
-	srvflags "github.com/tharsis/ethermint/server/flags"
+	ethdebug "github.com/celestiaorg/ethermint/rpc/ethereum/namespaces/debug"
+	"github.com/celestiaorg/ethermint/server/config"
+	srvflags "github.com/celestiaorg/ethermint/server/flags"
 
 	opticonf "github.com/celestiaorg/optimint/config"
 	opticonv "github.com/celestiaorg/optimint/conv"

@@ -5,11 +5,11 @@ import (
 	"io"
 	"testing"
 
+	"github.com/celestiaorg/ethermint/encoding"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
-	"github.com/tharsis/ethermint/encoding"
 )
 
 func BenchmarkEthermintApp_ExportAppStateAndValidators(b *testing.B) {

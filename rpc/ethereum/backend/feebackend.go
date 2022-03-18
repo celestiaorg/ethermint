@@ -5,11 +5,11 @@ import (
 	"math/big"
 	"sort"
 
+	rpctypes "github.com/celestiaorg/ethermint/rpc/ethereum/types"
+	evmtypes "github.com/celestiaorg/ethermint/x/evm/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rpc"
 	tmrpctypes "github.com/tendermint/tendermint/rpc/core/types"
-	rpctypes "github.com/tharsis/ethermint/rpc/ethereum/types"
-	evmtypes "github.com/tharsis/ethermint/x/evm/types"
 )
 
 type (
