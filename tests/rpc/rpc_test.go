@@ -207,6 +207,8 @@ func TestEth_NewBlockFilter(t *testing.T) {
 }
 
 func TestEth_GetFilterChanges_BlockFilter(t *testing.T) {
+	// TODO(jbowen93): https://github.com/celestiaorg/ethermint/issues/8
+	t.Skip()
 	rpcRes := call(t, "eth_newBlockFilter", []string{})
 
 	var ID string
@@ -330,6 +332,8 @@ func waitForReceipt(t *testing.T, hash hexutil.Bytes) map[string]interface{} {
 }
 
 func TestEth_GetFilterChanges_NoTopics(t *testing.T) {
+	// TODO(jbowen93): https://github.com/celestiaorg/ethermint/issues/8
+	t.Skip()
 	rpcRes := call(t, "eth_blockNumber", []string{})
 
 	var res hexutil.Uint64
@@ -410,6 +414,8 @@ func deployTestContractWithFunction(t *testing.T) hexutil.Bytes {
 
 // Tests topics case where there are topics in first two positions
 func TestEth_GetFilterChanges_Topics_AB(t *testing.T) {
+	// TODO(jbowen93): https://github.com/celestiaorg/ethermint/issues/8
+	t.Skip()
 	rpcRes := call(t, "eth_blockNumber", []string{})
 
 	var res hexutil.Uint64
@@ -440,6 +446,8 @@ func TestEth_GetFilterChanges_Topics_AB(t *testing.T) {
 }
 
 func TestEth_GetFilterChanges_Topics_XB(t *testing.T) {
+	// TODO(jbowen93): https://github.com/celestiaorg/ethermint/issues/8
+	t.Skip()
 	rpcRes := call(t, "eth_blockNumber", []string{})
 
 	var res hexutil.Uint64
