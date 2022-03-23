@@ -34,22 +34,16 @@ jobs:
         with:
           repository: jbowen93/evmos
           path: evmos
-      - name: Clone optimint repo
-        uses: actions/checkout@v2
-        with:
-          repository: celestiaorg/optimint
-          path: optimint
+      # - name: Clone optimint repo
+      #   uses: actions/checkout@v2
+      #   with:
+      #     repository: celestiaorg/optimint
+      #     path: optimint
+      #     ref: v0.1.2
       - name: Move Stuff and Tidy
         run: |
           ls
           mv evmos ..
-          mv optimint ..
-          cd ..
-          cp -R optimint ethermint
-          cd ethermint
-          rm -rf .git
-          go mod edit -replace=github.com/celestiaorg/optimint=./optimint
-          go mod tidy -compat=1.17 -e
           cd ..
           cp -R ethermint evmos
           cd evmos
