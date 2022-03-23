@@ -34,6 +34,7 @@ jobs:
         with:
           repository: jbowen93/evmos
           path: evmos
+          ref: docker-build
       # - name: Clone optimint repo
       #   uses: actions/checkout@v2
       #   with:
