@@ -34,13 +34,6 @@ jobs:
         with:
           repository: jbowen93/evmos
           path: evmos
-          ref: docker-build
-      # - name: Clone optimint repo
-      #   uses: actions/checkout@v2
-      #   with:
-      #     repository: celestiaorg/optimint
-      #     path: optimint
-      #     ref: v0.1.2
       - name: Move Stuff and Tidy
         run: |
           ls
