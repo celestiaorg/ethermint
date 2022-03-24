@@ -1,4 +1,4 @@
-name: build-evmos
+name: build-test-evmos
 
 on:
   push:
@@ -68,3 +68,41 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           file: ../evmos/docker/Dockerfile
+
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Clone repo
+      uses: actions/checkout@v2
+    - name: Clone ephemeral-cluster repo
+      uses: actions/checkout@v2
+      with:
+        repository: celestiaorg/ephemeral-cluster
+        path: ephemeral-cluster
+        ref: ethermint-chain
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+    - name: "Setup Cluster"
+      run: |
+        export EVMOS_IMAGE_TAG=ethermint-$(git rev-parse --short "$GITHUB_SHA")
+        cd ephemeral-cluster
+        ./debug-start-cluster.sh 
+    - name: "Test Cluster"
+      run: | 
+        docker ps -a
+        echo "------------- docker logs core0 -------------"
+        docker logs core0
+        echo "------------- docker logs bridge0 -------------"
+        docker logs bridge0
+        echo "------------- docker logs light0 -------------"
+        docker logs light0
+        echo "------------- docker logs dalc0 -------------"
+        docker logs dalc0
+        echo "------------- docker logs evmos0 -------------"
+        docker logs evmos0
+        cd /home/runner/work/ethermint/ethermint
+        MODE=rpc HOST=http://127.0.0.1:8545 go test ./tests/rpc/...
