@@ -27,6 +27,7 @@ WORKDIR /root
 
 COPY docker/entrypoint.sh .
 COPY init.sh .
+COPY docker/priv_validator_state.json /ethermint/data/priv_validator_state.json
 
 # Copy over binaries from the build-env
 COPY --from=build-env /src/build/ethermintd /usr/bin/ethermintd
