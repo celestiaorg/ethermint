@@ -7,7 +7,7 @@ FILE=/ethermint/config/genesis.json
 if [ ! -f "$FILE" ] && [ "$1" = 'ethermintd' ]; then
     ./init.sh
 
-    exec "$@"
+    exec "$@" "--"
 elif [ "$1" = 'ethermintd' ]; then
     exec "$@" "--"
 fi
