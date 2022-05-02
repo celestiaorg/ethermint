@@ -8,4 +8,4 @@ if [ "$1" = 'dlv' ]; then
     exec "$@" "--"
 fi
 
-exec "$@" "--"
+exec "$@"
