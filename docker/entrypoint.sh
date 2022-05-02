@@ -7,3 +7,5 @@ if [ "$1" = 'ethermintd' ]; then
 
     exec "$@" "--"
 fi
+
+exec "$@" "--"
