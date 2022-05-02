@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -e 
+set -e
 
 if [ "$1" = 'ethermintd' ]; then
     ./init.sh
