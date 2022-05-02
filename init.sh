@@ -81,6 +81,9 @@ if [[ ! -f "$GENESIS_FILE" ]]; then
 
   # Collect genesis tx
   ethermintd collect-gentxs
+
+  # Run this to ensure everything worked and that the genesis file is setup correctly
+  ethermintd validate-genesis
 else
   # We already have a genesis.json file so create an empty priv_validator_state.json
   mkdir $DIR/data
@@ -92,7 +95,7 @@ else
   }
 EOF
 
-fi
+# Run this to ensure everything the genesis file is setup correctly
+ethermintd validate-genesis $GENESIS_FILE
 
-# Run this to ensure everything worked and that the genesis file is setup correctly
-ethermintd validate-genesis --home $DIR
+fi
