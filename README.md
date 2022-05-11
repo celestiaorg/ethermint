@@ -2,7 +2,7 @@
 
 Celestiaorg fork of github.com/tharsis/ethermint
 
-Replaces usage of github.com/tendermint/tendermint with github.com/celestiaorg/optimint
+Replaces usage of https://github.com/tendermint/tendermint with https://github.com/celestiaorg/optimint
 
 ## Code of Conduct
 
