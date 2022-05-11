@@ -1,6 +1,6 @@
 # Ethermint
 
-Celestiaorg fork of github.com/tharsis/ethermint
+Celestiaorg fork of https://github.com/tharsis/ethermint
 
 Replaces usage of https://github.com/tendermint/tendermint with https://github.com/celestiaorg/optimint
 
