@@ -1,10 +1,7 @@
 package ante_test
 
 import (
-<<<<<<< HEAD
-=======
 	"errors"
->>>>>>> tharsis-main
 	"math/big"
 	"strings"
 
