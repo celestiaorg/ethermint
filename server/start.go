@@ -26,7 +26,6 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	"github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/proxy"
-	"github.com/tendermint/tendermint/rpc/client/local"
 	dbm "github.com/tendermint/tm-db"
 
 	"github.com/cosmos/cosmos-sdk/server/rosetta"
@@ -360,7 +359,7 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator ty
 	// service if API or gRPC or JSONRPC is enabled, and avoid doing so in the general
 	// case, because it spawns a new local tendermint RPC client.
 	if config.API.Enable || config.GRPC.Enable || config.JSONRPC.Enable {
-		clientCtx = clientCtx.WithClient(local.New(tmNode))
+		clientCtx = clientCtx.WithClient(srv.Client())
 
 		app.RegisterTxService(clientCtx)
 		app.RegisterTendermintService(clientCtx)
