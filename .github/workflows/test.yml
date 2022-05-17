@@ -38,10 +38,6 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: 1.17
-<<<<<<< HEAD
-=======
-          check-latest: true
->>>>>>> tharsis-main
       - uses: actions/checkout@v3
       - uses: technote-space/get-diff-action@v6.0.1
         with:
@@ -66,10 +62,6 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: 1.17
-<<<<<<< HEAD
-=======
-          check-latest: true
->>>>>>> tharsis-main
       - uses: actions/checkout@v3
       - uses: technote-space/get-diff-action@v6.0.1
         id: git_diff
@@ -82,7 +74,6 @@ jobs:
         run: |
           make test-import
         if: env.GIT_DIFF
-<<<<<<< HEAD
 
   # TODO(jbowen93): https://github.com/celestiaorg/ethermint/issues/25
   # test-solidity:
@@ -162,28 +153,6 @@ jobs:
   #       run: |
   #         make test-rpc
   #       if: env.GIT_DIFF
-=======
-      
-  test-rpc:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/setup-go@v3
-        with:
-          go-version: 1.17
-          check-latest: true
-      - uses: actions/checkout@v3
-      - uses: technote-space/get-diff-action@v6.0.1
-        with:
-          PATTERNS: |
-            **/**.sol
-            **/**.go
-            go.mod
-            go.sum
-      - name: Test rpc endpoint
-        run: |
-          make test-rpc
-        if: env.GIT_DIFF
 
   test-e2e:
     runs-on: ubuntu-latest
@@ -265,7 +234,6 @@ jobs:
         run: |
           make test-sim-import-export
         if: env.GIT_DIFF
->>>>>>> tharsis-main
 
   test-sim-after-import:
     runs-on: ubuntu-latest
@@ -274,10 +242,6 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: 1.17
-<<<<<<< HEAD
-=======
-          check-latest: true
->>>>>>> tharsis-main
       - uses: actions/checkout@v3
       - uses: technote-space/get-diff-action@v6.0.1
         with:
