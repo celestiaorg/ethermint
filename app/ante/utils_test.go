@@ -51,6 +51,7 @@ type AnteTestSuite struct {
 	ethSigner       ethtypes.Signer
 	enableFeemarket bool
 	enableLondonHF  bool
+	evmParamsOption func(*evmtypes.Params)
 }
 
 func (suite *AnteTestSuite) StateDB() *statedb.StateDB {
@@ -71,14 +72,17 @@ func (suite *AnteTestSuite) SetupTest() {
 			suite.Require().NoError(err)
 			genesis[feemarkettypes.ModuleName] = app.AppCodec().MustMarshalJSON(feemarketGenesis)
 		}
+		evmGenesis := evmtypes.DefaultGenesisState()
 		if !suite.enableLondonHF {
-			evmGenesis := evmtypes.DefaultGenesisState()
 			maxInt := sdk.NewInt(math.MaxInt64)
 			evmGenesis.Params.ChainConfig.LondonBlock = &maxInt
 			evmGenesis.Params.ChainConfig.ArrowGlacierBlock = &maxInt
 			evmGenesis.Params.ChainConfig.MergeForkBlock = &maxInt
-			genesis[evmtypes.ModuleName] = app.AppCodec().MustMarshalJSON(evmGenesis)
 		}
+		if suite.evmParamsOption != nil {
+			suite.evmParamsOption(&evmGenesis.Params)
+		}
+		genesis[evmtypes.ModuleName] = app.AppCodec().MustMarshalJSON(evmGenesis)
 		return genesis
 	})
 
@@ -97,14 +101,14 @@ func (suite *AnteTestSuite) SetupTest() {
 	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 
 	options := ante.HandlerOptions{
-		AccountKeeper:    suite.app.AccountKeeper,
-		BankKeeper:       suite.app.BankKeeper,
-		EvmKeeper:        suite.app.EvmKeeper,
-		FeegrantKeeper:   suite.app.FeeGrantKeeper,
-		IBCChannelKeeper: suite.app.IBCKeeper.ChannelKeeper,
-		FeeMarketKeeper:  suite.app.FeeMarketKeeper,
-		SignModeHandler:  encodingConfig.TxConfig.SignModeHandler(),
-		SigGasConsumer:   ante.DefaultSigVerificationGasConsumer,
+		AccountKeeper:   suite.app.AccountKeeper,
+		BankKeeper:      suite.app.BankKeeper,
+		EvmKeeper:       suite.app.EvmKeeper,
+		FeegrantKeeper:  suite.app.FeeGrantKeeper,
+		IBCKeeper:       suite.app.IBCKeeper,
+		FeeMarketKeeper: suite.app.FeeMarketKeeper,
+		SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
+		SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 	}
 
 	suite.Require().NoError(options.Validate())
