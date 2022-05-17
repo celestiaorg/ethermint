@@ -335,6 +335,7 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator ty
 		proxy.NewLocalClientCreator(app),
 		genesis,
 		ctx.Logger,
+		appCreator,
 	)
 	if err != nil {
 		return err
