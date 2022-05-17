@@ -23,8 +23,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-var maxTestingAccounts = 100
-var seed = int64(233)
+var (
+	maxTestingAccounts = 100
+	seed               = int64(233)
+)
 
 func TestRandomGenesisAccounts(t *testing.T) {
 	r := rand.New(rand.NewSource(seed))
