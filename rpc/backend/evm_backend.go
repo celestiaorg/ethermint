@@ -300,9 +300,9 @@ func (b *Backend) EthBlockFromTendermint(
 		gasUsed += uint64(txsResult.GetGasUsed())
 	}
 
-	ethHeader := types.EthHeaderFromTendermint(
-		block.Header, bloom, baseFee,
-		uint64(gasLimit), gasUsed)
+	ethHeader := types.EthHeaderFromTendermint(block.Header, bloom, baseFee)
+	ethHeader.GasLimit = uint64(gasLimit)
+	ethHeader.GasUsed = gasUsed
 
 	b.logger.Info("ethHeader", "ethHeader", ethHeader)
 

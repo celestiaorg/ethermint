@@ -41,7 +41,7 @@ func RawTxToEthTx(clientCtx client.Context, txBz tmtypes.Tx) ([]*evmtypes.MsgEth
 
 // EthHeaderFromTendermint is an util function that returns an Ethereum Header
 // from a tendermint Header.
-func EthHeaderFromTendermint(header tmtypes.Header, bloom ethtypes.Bloom, baseFee *big.Int, gasLimit uint64, gasUsed uint64) *ethtypes.Header {
+func EthHeaderFromTendermint(header tmtypes.Header, bloom ethtypes.Bloom, baseFee *big.Int) *ethtypes.Header {
 	txHash := ethtypes.EmptyRootHash
 	if len(header.DataHash) == 0 {
 		txHash = common.BytesToHash(header.DataHash)
@@ -57,8 +57,8 @@ func EthHeaderFromTendermint(header tmtypes.Header, bloom ethtypes.Bloom, baseFe
 		Bloom:       bloom,
 		Difficulty:  big.NewInt(0),
 		Number:      big.NewInt(header.Height),
-		GasLimit:    gasLimit,
-		GasUsed:     gasUsed,
+		GasLimit:    0,
+		GasUsed:     0,
 		Time:        uint64(header.Time.UTC().Unix()),
 		Extra:       []byte{},
 		MixDigest:   common.Hash{},
@@ -99,7 +99,9 @@ func FormatBlock(
 		transactionsRoot = common.BytesToHash(header.DataHash)
 	}
 
-	ethHeader := EthHeaderFromTendermint(header, bloom, baseFee, uint64(gasLimit), gasUsed.Uint64())
+	ethHeader := EthHeaderFromTendermint(header, bloom, baseFee)
+	ethHeader.GasLimit = uint64(gasLimit)
+	ethHeader.GasUsed = gasUsed.Uint64()
 	result := map[string]interface{}{
 		"number": hexutil.Uint64(header.Height),
 		"hash":   ethHeader.Hash(),
