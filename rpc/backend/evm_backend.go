@@ -286,6 +286,9 @@ func (b *Backend) EthBlockFromTendermint(
 	validatorAddr := common.BytesToAddress(addr)
 	b.logger.Info("validator address", "validatorAddr", validatorAddr)
 
+	headerAddr := common.BytesToAddress(resBlock.Block.Header.ProposerAddress)
+	b.logger.Info("header address", "headerAddr", headerAddr)
+
 	gasLimit, err := types.BlockMaxGasFromConsensusParams(ctx, b.clientCtx, block.Height)
 	if err != nil {
 		b.logger.Error("failed to query consensus params", "error", err.Error())
