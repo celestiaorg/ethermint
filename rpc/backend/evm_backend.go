@@ -281,8 +281,10 @@ func (b *Backend) EthBlockFromTendermint(
 	if err != nil {
 		return nil, err
 	}
+	b.logger.Info("address", "addr", addr)
 
 	validatorAddr := common.BytesToAddress(addr)
+	b.logger.Info("validator address", "validatorAddr", validatorAddr)
 
 	gasLimit, err := types.BlockMaxGasFromConsensusParams(ctx, b.clientCtx, block.Height)
 	if err != nil {

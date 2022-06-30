@@ -103,9 +103,9 @@ func FormatBlock(
 	ethHeader.GasLimit = uint64(gasLimit)
 	ethHeader.GasUsed = gasUsed.Uint64()
 	result := map[string]interface{}{
-		"number": hexutil.Uint64(header.Height),
-		"hash":   ethHeader.Hash(),
-		// "hash":             hexutil.Bytes(header.Hash()),
+		"number":           hexutil.Uint64(header.Height),
+		"ethHash":          ethHeader.Hash(),
+		"hash":             hexutil.Bytes(header.Hash()),
 		"parentHash":       common.BytesToHash(header.LastBlockID.Hash.Bytes()),
 		"nonce":            ethtypes.BlockNonce{},   // PoW specific
 		"sha3Uncles":       ethtypes.EmptyUncleHash, // No uncles in Tendermint
