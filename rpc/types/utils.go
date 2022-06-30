@@ -99,10 +99,10 @@ func FormatBlock(
 		transactionsRoot = common.BytesToHash(header.DataHash)
 	}
 
-	ethHash := EthHeaderFromTendermint(header, ethtypes.Bloom{}, baseFee)
+	ethHeader := EthHeaderFromTendermint(header, bloom, baseFee)
 	result := map[string]interface{}{
 		"number": hexutil.Uint64(header.Height),
-		"hash":   ethHash.Hash(),
+		"hash":   ethHeader.Hash(),
 		// "hash":             hexutil.Bytes(header.Hash()),
 		"parentHash":       common.BytesToHash(header.LastBlockID.Hash.Bytes()),
 		"nonce":            ethtypes.BlockNonce{},   // PoW specific
