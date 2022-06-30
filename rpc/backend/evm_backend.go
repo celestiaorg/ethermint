@@ -301,7 +301,7 @@ func (b *Backend) EthBlockFromTendermint(
 	}
 
 	ethHeader := types.EthHeaderFromTendermint(block.Header, bloom, baseFee)
-	b.logger.Info("ethHeader", ethHeader)
+	b.logger.Info("ethHeader", "ethHeader", ethHeader)
 	formattedBlock := types.FormatBlock(
 		block.Header, block.Size(),
 		gasLimit, new(big.Int).SetUint64(gasUsed),
