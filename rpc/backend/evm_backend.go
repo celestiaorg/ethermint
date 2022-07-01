@@ -59,7 +59,7 @@ func (b *Backend) BlockNumber() (hexutil.Uint64, error) {
 }
 
 // GetBlockByNumber returns the block identified by number.
-func (b *Backend) GetBlockByNumber(blockNum types.BlockNumber, fullTx bool) ([]byte, error) {
+func (b *Backend) GetBlockByNumber(blockNum types.BlockNumber, fullTx bool) (map[string]interface{}, error) {
 	resBlock, err := b.GetTendermintBlockByNumber(blockNum)
 	if err != nil {
 		return nil, err
@@ -70,29 +70,13 @@ func (b *Backend) GetBlockByNumber(blockNum types.BlockNumber, fullTx bool) ([]b
 		return nil, nil
 	}
 
-	ethBlock, err := b.EthBlockFromTm(resBlock)
+	res, err := b.EthBlockFromTendermint(resBlock, fullTx)
 	if err != nil {
-		b.logger.Debug("EthBlockFromTm failed", "height", blockNum, "error", err.Error())
+		b.logger.Debug("EthBlockFromTendermint failed", "height", blockNum, "error", err.Error())
 		return nil, err
 	}
 
-	// res, err := b.EthBlockFromTendermint(resBlock, fullTx)
-	// if err != nil {
-	// 	b.logger.Debug("EthBlockFromTendermint failed", "height", blockNum, "error", err.Error())
-	// 	return nil, err
-	// }
-
-	b.logger.Info("ethHeader", "ethHeader", ethBlock.Header())
-
-	ethHash := ethBlock.Header().Hash()
-	b.logger.Info("ethHash", "ethHash", ethHash)
-
-	blockJson, err := json.Marshal(ethBlock)
-	if err != nil {
-		return nil, err
-	}
-
-	return blockJson, nil
+	return res, nil
 }
 
 // GetBlockByHash returns the block identified by hash.
@@ -120,7 +104,7 @@ func (b *Backend) BlockByNumber(blockNum types.BlockNumber) (*ethtypes.Block, er
 		return nil, errors.Errorf("block not found for height %d", blockNum)
 	}
 
-	return b.EthBlockFromTm(resBlock, 0, 0)
+	return b.EthBlockFromTm(resBlock)
 }
 
 // BlockByHash returns the block identified by hash.
@@ -134,7 +118,7 @@ func (b *Backend) BlockByHash(hash common.Hash) (*ethtypes.Block, error) {
 		return nil, errors.Errorf("block not found for hash %s", hash)
 	}
 
-	return b.EthBlockFromTm(resBlock, 0, 0)
+	return b.EthBlockFromTm(resBlock)
 }
 
 func (b *Backend) EthBlockFromTm(resBlock *tmrpctypes.ResultBlock) (*ethtypes.Block, error) {
@@ -151,51 +135,11 @@ func (b *Backend) EthBlockFromTm(resBlock *tmrpctypes.ResultBlock) (*ethtypes.Bl
 		return nil, err
 	}
 
+	ethHeader := types.EthHeaderFromTendermint(block.Header, bloom, baseFee)
+
 	resBlockResult, err := b.clientCtx.Client.BlockResults(b.ctx, &block.Height)
 	if err != nil {
 		return nil, err
-	}
-
-	ctx := types.ContextWithHeight(block.Height)
-	req := &evmtypes.QueryValidatorAccountRequest{
-		ConsAddress: sdk.ConsAddress(block.Header.ProposerAddress).String(),
-	}
-	res, err := b.queryClient.ValidatorAccount(ctx, req)
-	if err != nil {
-		b.logger.Debug(
-			"failed to query validator operator address",
-			"height", block.Height,
-			"cons-address", req.ConsAddress,
-			"error", err.Error(),
-		)
-		return nil, err
-	}
-	addr, err := sdk.AccAddressFromBech32(res.AccountAddress)
-	if err != nil {
-		return nil, err
-	}
-	b.logger.Info("address", "addr", addr)
-
-	validatorAddr := common.BytesToAddress(addr)
-	b.logger.Info("validator address", "validatorAddr", validatorAddr)
-
-	headerAddr := common.BytesToAddress(resBlock.Block.Header.ProposerAddress)
-	b.logger.Info("header address", "headerAddr", headerAddr)
-
-	gasLimit, err := types.BlockMaxGasFromConsensusParams(ctx, b.clientCtx, block.Height)
-	if err != nil {
-		b.logger.Error("failed to query consensus params", "error", err.Error())
-	}
-
-	gasUsed := uint64(0)
-
-	for _, txsResult := range resBlockResult.TxsResults {
-		// workaround for cosmos-sdk bug. https://github.com/cosmos/cosmos-sdk/issues/10832
-		if ShouldIgnoreGasUsed(txsResult) {
-			// block gas limit has exceeded, other txs must have failed with same reason.
-			break
-		}
-		gasUsed += uint64(txsResult.GetGasUsed())
 	}
 
 	msgs := b.GetEthereumMsgsFromTendermintBlock(resBlock, resBlockResult)
@@ -204,8 +148,6 @@ func (b *Backend) EthBlockFromTm(resBlock *tmrpctypes.ResultBlock) (*ethtypes.Bl
 	for i, ethMsg := range msgs {
 		txs[i] = ethMsg.AsTransaction()
 	}
-
-	ethHeader := types.EthHeaderFromTendermint(block.Header, bloom, baseFee, uint64(gasLimit), gasUsed)
 
 	// TODO: add tx receipts
 	ethBlock := ethtypes.NewBlock(ethHeader, txs, nil, nil, nil)
