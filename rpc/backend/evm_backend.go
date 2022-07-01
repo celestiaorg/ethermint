@@ -306,11 +306,11 @@ func (b *Backend) EthBlockFromTendermint(
 	}
 	resBlock.Block.Header.Hash()
 
-	ethHeader := types.EthHeaderFromTendermint(block.Header, bloom, baseFee)
-	ethHeader.GasLimit = uint64(gasLimit)
-	ethHeader.GasUsed = gasUsed
+	// ethHeader := types.EthHeaderFromTendermint(block.Header, bloom, baseFee)
+	// ethHeader.GasLimit = uint64(gasLimit)
+	// ethHeader.GasUsed = gasUsed
 
-	b.logger.Info("ethHeader", "ethHeader", ethHeader)
+	// b.logger.Info("ethHeader", "ethHeader", ethHeader)
 
 	formattedBlock := types.FormatBlock(
 		block.Header, block.Size(),
@@ -328,6 +328,9 @@ func (b *Backend) EthBlockFromTendermint(
 		return nil, err
 	}
 	b.logger.Info("unmarshalledJson", "unmarshalledJson", unmarshalledJson)
+
+	ethHeader := unmarshalledJson.Hash()
+	b.logger.Info("ethHeader", "ethHeader", ethHeader)
 
 	return formattedBlock, nil
 }
