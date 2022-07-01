@@ -281,8 +281,13 @@ func (b *Backend) EthBlockFromTendermint(
 	if err != nil {
 		return nil, err
 	}
+	b.logger.Info("address", "addr", addr)
 
 	validatorAddr := common.BytesToAddress(addr)
+	b.logger.Info("validator address", "validatorAddr", validatorAddr)
+
+	headerAddr := common.BytesToAddress(resBlock.Block.Header.ProposerAddress)
+	b.logger.Info("header address", "headerAddr", headerAddr)
 
 	gasLimit, err := types.BlockMaxGasFromConsensusParams(ctx, b.clientCtx, block.Height)
 	if err != nil {
@@ -299,12 +304,30 @@ func (b *Backend) EthBlockFromTendermint(
 		}
 		gasUsed += uint64(txsResult.GetGasUsed())
 	}
+	resBlock.Block.Header.Hash()
 
 	formattedBlock := types.FormatBlock(
 		block.Header, block.Size(),
 		gasLimit, new(big.Int).SetUint64(gasUsed),
 		ethRPCTxs, bloom, validatorAddr, baseFee,
 	)
+	blockJson, err := json.Marshal(formattedBlock)
+	if err != nil {
+		return nil, err
+	}
+	b.logger.Info("headerJson", "headerJson", string(blockJson))
+	var ethHeader ethtypes.Header
+	err = json.Unmarshal(blockJson, &ethHeader)
+	if err != nil {
+		return nil, err
+	}
+	b.logger.Info("ethHeader", "ethHeader", ethHeader)
+
+	ethHash := ethHeader.Hash()
+	b.logger.Info("ethHash", "ethHash", ethHash)
+
+	formattedBlock["hash"] = ethHash
+
 	return formattedBlock, nil
 }
 

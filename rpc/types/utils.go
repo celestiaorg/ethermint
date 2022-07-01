@@ -99,6 +99,9 @@ func FormatBlock(
 		transactionsRoot = common.BytesToHash(header.DataHash)
 	}
 
+	ethHeader := EthHeaderFromTendermint(header, bloom, baseFee)
+	ethHeader.GasLimit = uint64(gasLimit)
+	ethHeader.GasUsed = gasUsed.Uint64()
 	result := map[string]interface{}{
 		"number":           hexutil.Uint64(header.Height),
 		"hash":             hexutil.Bytes(header.Hash()),
@@ -122,6 +125,8 @@ func FormatBlock(
 		"transactions":    transactions,
 		"totalDifficulty": (*hexutil.Big)(big.NewInt(0)),
 	}
+
+	// Can we make a "correct" ethtypes.Header?
 
 	if baseFee != nil {
 		result["baseFeePerGas"] = (*hexutil.Big)(baseFee)
