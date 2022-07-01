@@ -127,6 +127,8 @@ func FormatBlock(
 		"totalDifficulty": (*hexutil.Big)(big.NewInt(0)),
 	}
 
+	// Can we make a "correct" ethtypes.Header?
+
 	if baseFee != nil {
 		result["baseFeePerGas"] = (*hexutil.Big)(baseFee)
 	}

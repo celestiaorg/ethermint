@@ -304,6 +304,7 @@ func (b *Backend) EthBlockFromTendermint(
 		}
 		gasUsed += uint64(txsResult.GetGasUsed())
 	}
+	resBlock.Block.Header.Hash()
 
 	ethHeader := types.EthHeaderFromTendermint(block.Header, bloom, baseFee)
 	ethHeader.GasLimit = uint64(gasLimit)
@@ -316,7 +317,39 @@ func (b *Backend) EthBlockFromTendermint(
 		gasLimit, new(big.Int).SetUint64(gasUsed),
 		ethRPCTxs, bloom, validatorAddr, baseFee,
 	)
+	headerJson, err := json.MarshalIndent(formattedBlock, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	b.logger.Info("headerJson", "headerJson", headerJson)
+	var unmarshalledJson ethtypes.Header
+	err = json.Unmarshal(headerJson, &unmarshalledJson)
+	if err != nil {
+		return nil, err
+	}
+	b.logger.Info("unmarshalledJson", "unmarshalledJson", unmarshalledJson)
+
 	return formattedBlock, nil
+}
+
+type rpcHeaderCacheInfo struct {
+	Hash common.Hash `json:"hash"`
+}
+
+type rpcHeader struct {
+	cache  rpcHeaderCacheInfo
+	header ethtypes.Header
+}
+
+func (header *rpcHeader) UnmarshalJSON(msg []byte) error {
+	fmt.Println("msg")
+	fmt.Println(string(msg))
+	if err := json.Unmarshal(msg, &header.header); err != nil {
+		return err
+	}
+	header.cache.Hash = header.header.Hash()
+	return nil
+	// return json.Unmarshal(msg, &header.cache)
 }
 
 // CurrentHeader returns the latest block header
