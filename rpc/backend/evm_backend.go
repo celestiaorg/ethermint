@@ -306,53 +306,29 @@ func (b *Backend) EthBlockFromTendermint(
 	}
 	resBlock.Block.Header.Hash()
 
-	// ethHeader := types.EthHeaderFromTendermint(block.Header, bloom, baseFee)
-	// ethHeader.GasLimit = uint64(gasLimit)
-	// ethHeader.GasUsed = gasUsed
-
-	// b.logger.Info("ethHeader", "ethHeader", ethHeader)
-
 	formattedBlock := types.FormatBlock(
 		block.Header, block.Size(),
 		gasLimit, new(big.Int).SetUint64(gasUsed),
 		ethRPCTxs, bloom, validatorAddr, baseFee,
 	)
-	headerJson, err := json.MarshalIndent(formattedBlock, "", "  ")
+	blockJson, err := json.Marshal(formattedBlock)
 	if err != nil {
 		return nil, err
 	}
-	b.logger.Info("headerJson", "headerJson", headerJson)
-	var unmarshalledJson ethtypes.Header
-	err = json.Unmarshal(headerJson, &unmarshalledJson)
+	b.logger.Info("headerJson", "headerJson", string(blockJson))
+	var ethHeader ethtypes.Header
+	err = json.Unmarshal(blockJson, &ethHeader)
 	if err != nil {
 		return nil, err
 	}
-	b.logger.Info("unmarshalledJson", "unmarshalledJson", unmarshalledJson)
-
-	ethHeader := unmarshalledJson.Hash()
 	b.logger.Info("ethHeader", "ethHeader", ethHeader)
 
+	ethHash := ethHeader.Hash()
+	b.logger.Info("ethHash", "ethHash", ethHash)
+
+	formattedBlock["hash"] = ethHash
+
 	return formattedBlock, nil
-}
-
-type rpcHeaderCacheInfo struct {
-	Hash common.Hash `json:"hash"`
-}
-
-type rpcHeader struct {
-	cache  rpcHeaderCacheInfo
-	header ethtypes.Header
-}
-
-func (header *rpcHeader) UnmarshalJSON(msg []byte) error {
-	fmt.Println("msg")
-	fmt.Println(string(msg))
-	if err := json.Unmarshal(msg, &header.header); err != nil {
-		return err
-	}
-	header.cache.Hash = header.header.Hash()
-	return nil
-	// return json.Unmarshal(msg, &header.cache)
 }
 
 // CurrentHeader returns the latest block header
