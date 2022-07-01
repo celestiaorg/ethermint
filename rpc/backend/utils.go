@@ -226,16 +226,11 @@ func (b *Backend) getAccountNonce(accAddr common.Address, pending bool, height i
 // output: targetOneFeeHistory
 func (b *Backend) processBlock(
 	tendermintBlock *tmrpctypes.ResultBlock,
-	ethBlock []byte,
+	ethBlock *map[string]interface{},
 	rewardPercentiles []float64,
 	tendermintBlockResult *tmrpctypes.ResultBlockResults,
 	targetOneFeeHistory *types.OneFeeHistory,
 ) error {
-	var block ethtypes.Block
-	err := json.Unmarshal(ethBlock, block)
-	if err != nil {
-		return err
-	}
 	blockHeight := tendermintBlock.Block.Height
 	blockBaseFee, err := b.BaseFee(blockHeight)
 	if err != nil {
@@ -246,20 +241,17 @@ func (b *Backend) processBlock(
 	targetOneFeeHistory.BaseFee = blockBaseFee
 
 	// set gas used ratio
-	gasLimitUint64 := block.GasLimit()
-	// gasLimitUint64, ok := (*ethBlock)["gasLimit"].(hexutil.Uint64)
-	// if !ok {
-	// 	return fmt.Errorf("invalid gas limit type: %T", (*ethBlock)["gasLimit"])
-	// }
+	gasLimitUint64, ok := (*ethBlock)["gasLimit"].(hexutil.Uint64)
+	if !ok {
+		return fmt.Errorf("invalid gas limit type: %T", (*ethBlock)["gasLimit"])
+	}
 
-	gasUsed := block.GasUsed()
-	// gasUsedBig, ok := (*ethBlock)["gasUsed"].(*hexutil.Big)
-	// if !ok {
-	// 	return fmt.Errorf("invalid gas used type: %T", (*ethBlock)["gasUsed"])
-	// }
+	gasUsedBig, ok := (*ethBlock)["gasUsed"].(*hexutil.Big)
+	if !ok {
+		return fmt.Errorf("invalid gas used type: %T", (*ethBlock)["gasUsed"])
+	}
 
-	// gasusedfloat, _ := new(big.Float).SetInt(gasUsedBig.ToInt()).Float64()
-	gasusedfloat, _ := new(big.Float).SetInt(big.NewInt(int64(gasUsed))).Float64()
+	gasusedfloat, _ := new(big.Float).SetInt(gasUsedBig.ToInt()).Float64()
 
 	if gasLimitUint64 <= 0 {
 		return fmt.Errorf("gasLimit of block height %d should be bigger than 0 , current gaslimit %d", blockHeight, gasLimitUint64)

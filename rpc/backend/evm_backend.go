@@ -120,7 +120,7 @@ func (b *Backend) BlockByNumber(blockNum types.BlockNumber) (*ethtypes.Block, er
 		return nil, errors.Errorf("block not found for height %d", blockNum)
 	}
 
-	return b.EthBlockFromTm(resBlock)
+	return b.EthBlockFromTm(resBlock, 0, 0)
 }
 
 // BlockByHash returns the block identified by hash.
@@ -134,7 +134,7 @@ func (b *Backend) BlockByHash(hash common.Hash) (*ethtypes.Block, error) {
 		return nil, errors.Errorf("block not found for hash %s", hash)
 	}
 
-	return b.EthBlockFromTm(resBlock)
+	return b.EthBlockFromTm(resBlock, 0, 0)
 }
 
 func (b *Backend) EthBlockFromTm(resBlock *tmrpctypes.ResultBlock) (*ethtypes.Block, error) {
@@ -417,7 +417,7 @@ func (b *Backend) HeaderByNumber(blockNum types.BlockNumber) (*ethtypes.Header, 
 		return nil, err
 	}
 
-	ethHeader := types.EthHeaderFromTendermint(resBlock.Block.Header, bloom, baseFee, 0, 0)
+	ethHeader := types.EthHeaderFromTendermint(resBlock.Block.Header, bloom, baseFee)
 	return ethHeader, nil
 }
 
@@ -442,7 +442,7 @@ func (b *Backend) HeaderByHash(blockHash common.Hash) (*ethtypes.Header, error) 
 		return nil, err
 	}
 
-	ethHeader := types.EthHeaderFromTendermint(resBlock.Block.Header, bloom, baseFee, 0, 0)
+	ethHeader := types.EthHeaderFromTendermint(resBlock.Block.Header, bloom, baseFee)
 	return ethHeader, nil
 }
 
@@ -972,7 +972,7 @@ func (b *Backend) FeeHistory(
 		}
 
 		oneFeeHistory := types.OneFeeHistory{}
-		err = b.processBlock(tendermintblock, ethBlock, rewardPercentiles, tendermintBlockResult, &oneFeeHistory)
+		err = b.processBlock(tendermintblock, &ethBlock, rewardPercentiles, tendermintBlockResult, &oneFeeHistory)
 		if err != nil {
 			return nil, err
 		}
