@@ -52,7 +52,7 @@ type EVMBackend interface {
 	BlockNumber() (hexutil.Uint64, error)
 	GetTendermintBlockByNumber(blockNum types.BlockNumber) (*tmrpctypes.ResultBlock, error)
 	GetTendermintBlockByHash(blockHash common.Hash) (*tmrpctypes.ResultBlock, error)
-	GetBlockByNumber(blockNum types.BlockNumber, fullTx bool) (map[string]interface{}, error)
+	GetBlockByNumber(blockNum types.BlockNumber, fullTx bool) ([]byte, error)
 	GetBlockByHash(hash common.Hash, fullTx bool) (map[string]interface{}, error)
 	BlockByNumber(blockNum types.BlockNumber) (*ethtypes.Block, error)
 	BlockByHash(blockHash common.Hash) (*ethtypes.Block, error)
