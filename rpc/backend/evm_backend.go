@@ -286,9 +286,6 @@ func (b *Backend) EthBlockFromTendermint(
 	validatorAddr := common.BytesToAddress(addr)
 	b.logger.Info("validator address", "validatorAddr", validatorAddr)
 
-	headerAddr := common.BytesToAddress(resBlock.Block.Header.ProposerAddress)
-	b.logger.Info("header address", "headerAddr", headerAddr)
-
 	gasLimit, err := types.BlockMaxGasFromConsensusParams(ctx, b.clientCtx, block.Height)
 	if err != nil {
 		b.logger.Error("failed to query consensus params", "error", err.Error())
@@ -307,6 +304,7 @@ func (b *Backend) EthBlockFromTendermint(
 
 	// Can we use EthHeaderFromTendermint?
 	ethHeader := types.EthHeaderFromTendermint(resBlock.Block.Header, bloom, baseFee)
+	ethHeader.Coinbase = validatorAddr
 	ethHeader.GasLimit = uint64(gasLimit)
 	ethHeader.GasUsed = gasUsed
 	ethHash := ethHeader.Hash()
@@ -323,13 +321,12 @@ func (b *Backend) EthBlockFromTendermint(
 	if err != nil {
 		return nil, err
 	}
-	b.logger.Info("headerJson", "headerJson", string(blockJson))
 	var JSONethHeader ethtypes.Header
 	err = json.Unmarshal(blockJson, &JSONethHeader)
 	if err != nil {
 		return nil, err
 	}
-	JSONethHash := ethHeader.Hash()
+	JSONethHash := JSONethHeader.Hash()
 	b.logger.Info("JSONethHeader", "JSONethHeader", JSONethHeader)
 	b.logger.Info("JSONethHash", "JSONethHash", JSONethHash)
 
