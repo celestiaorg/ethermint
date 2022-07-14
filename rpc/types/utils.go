@@ -99,9 +99,6 @@ func FormatBlock(
 		transactionsRoot = common.BytesToHash(header.DataHash)
 	}
 
-	ethHeader := EthHeaderFromTendermint(header, bloom, baseFee)
-	ethHeader.GasLimit = uint64(gasLimit)
-	ethHeader.GasUsed = gasUsed.Uint64()
 	result := map[string]interface{}{
 		"number":           hexutil.Uint64(header.Height),
 		"hash":             hexutil.Bytes(header.Hash()),
