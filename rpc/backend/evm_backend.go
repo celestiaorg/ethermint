@@ -310,6 +310,8 @@ func (b *Backend) EthBlockFromTendermint(
 	ethHeader.GasLimit = uint64(gasLimit)
 	ethHeader.GasUsed = gasUsed
 	ethHash := ethHeader.Hash()
+	b.logger.Info("ethHeader", "ethHeader", ethHeader)
+	b.logger.Info("ethHash", "ethHash", ethHash)
 
 	formattedBlock := types.FormatBlock(
 		block.Header, block.Size(),
@@ -317,22 +319,22 @@ func (b *Backend) EthBlockFromTendermint(
 		ethRPCTxs, bloom, validatorAddr, baseFee,
 	)
 	// This feels like a terrible way to get the EthHeader out
-	// blockJson, err := json.Marshal(formattedBlock)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// b.logger.Info("headerJson", "headerJson", string(blockJson))
-	// var ethHeader ethtypes.Header
-	// err = json.Unmarshal(blockJson, &ethHeader)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	b.logger.Info("ethHeader", "ethHeader", ethHeader)
-
-	// ethHash := ethHeader.Hash()s
-	b.logger.Info("ethHash", "ethHash", ethHash)
+	blockJson, err := json.Marshal(formattedBlock)
+	if err != nil {
+		return nil, err
+	}
+	b.logger.Info("headerJson", "headerJson", string(blockJson))
+	var JSONethHeader ethtypes.Header
+	err = json.Unmarshal(blockJson, &JSONethHeader)
+	if err != nil {
+		return nil, err
+	}
+	JSONethHash := ethHeader.Hash()
+	b.logger.Info("JSONethHeader", "JSONethHeader", JSONethHeader)
+	b.logger.Info("JSONethHash", "JSONethHash", JSONethHash)
 
 	formattedBlock["eth_hash"] = ethHash
+	formattedBlock["json_eth_hash"] = JSONethHash
 
 	return formattedBlock, nil
 }
