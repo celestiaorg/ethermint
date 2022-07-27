@@ -318,7 +318,7 @@ func (b *Backend) EthBlockFromTendermint(
 		ethRPCTxs, bloom, common.BytesToAddress(block.Header.ProposerAddress), baseFee,
 	)
 
-	formattedBlock["eth_hash"] = ethHash
+	formattedBlock["hash"] = ethHash
 
 	return formattedBlock, nil
 }
