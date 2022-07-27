@@ -261,31 +261,7 @@ func (b *Backend) EthBlockFromTendermint(
 		b.logger.Debug("failed to query BlockBloom", "height", block.Height, "error", err.Error())
 	}
 
-	// Why do we need to get the Validator address from the proposer address?
-	// req := &evmtypes.QueryValidatorAccountRequest{
-	// 	ConsAddress: sdk.ConsAddress(block.Header.ProposerAddress).String(),
-	// }
-
 	ctx := types.ContextWithHeight(block.Height)
-	// res, err := b.queryClient.ValidatorAccount(ctx, req)
-	// if err != nil {
-	// 	b.logger.Debug(
-	// 		"failed to query validator operator address",
-	// 		"height", block.Height,
-	// 		"cons-address", req.ConsAddress,
-	// 		"error", err.Error(),
-	// 	)
-	// 	return nil, err
-	// }
-
-	// addr, err := sdk.AccAddressFromBech32(res.AccountAddress)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// b.logger.Info("address", "addr", addr)
-
-	// validatorAddr := common.BytesToAddress(addr)
-	// b.logger.Info("validator address", "validatorAddr", validatorAddr)
 
 	gasLimit, err := types.BlockMaxGasFromConsensusParams(ctx, b.clientCtx, block.Height)
 	if err != nil {
@@ -303,20 +279,27 @@ func (b *Backend) EthBlockFromTendermint(
 		gasUsed += uint64(txsResult.GetGasUsed())
 	}
 
-	ethHeader := types.EthHeaderFromTendermint(resBlock.Block.Header, bloom, baseFee)
-	ethHeader.Coinbase = common.BytesToAddress(block.Header.ProposerAddress)
-	ethHeader.GasLimit = uint64(gasLimit)
-	ethHeader.GasUsed = gasUsed
-	ethHash := ethHeader.Hash()
-	b.logger.Info("ethHeader", "ethHeader", ethHeader)
-	b.logger.Info("ethHash", "ethHash", ethHash)
-
 	// Could this take the already eth formatted header?
 	formattedBlock := types.FormatBlock(
 		block.Header, block.Size(),
 		gasLimit, new(big.Int).SetUint64(gasUsed),
 		ethRPCTxs, bloom, common.BytesToAddress(block.Header.ProposerAddress), baseFee,
 	)
+
+	blockJson, err := json.Marshal(formattedBlock)
+	if err != nil {
+		return nil, err
+	}
+	b.logger.Info("headerJson", "headerJson", string(blockJson))
+	var ethHeader ethtypes.Header
+	err = json.Unmarshal(blockJson, &ethHeader)
+	if err != nil {
+		return nil, err
+	}
+	b.logger.Info("ethHeader", "ethHeader", ethHeader)
+
+	ethHash := ethHeader.Hash()
+	b.logger.Info("ethHash", "ethHash", ethHash)
 
 	formattedBlock["hash"] = ethHash
 
