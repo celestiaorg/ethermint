@@ -301,6 +301,7 @@ func (b *Backend) EthBlockFromTendermint(
 	ethHash := ethHeader.Hash()
 	b.logger.Info("ethHash", "ethHash", ethHash)
 
+	formattedBlock["parentHash"] = ethHeader.ParentHash
 	formattedBlock["hash"] = ethHash
 
 	return formattedBlock, nil
