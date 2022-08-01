@@ -305,6 +305,24 @@ func (b *Backend) EthBlockFromTendermint(
 		gasLimit, new(big.Int).SetUint64(gasUsed),
 		ethRPCTxs, bloom, validatorAddr, baseFee,
 	)
+
+	blockJson, err := json.Marshal(formattedBlock)
+	if err != nil {
+		return nil, err
+	}
+	b.logger.Info("headerJson", "headerJson", string(blockJson))
+	var ethHeader ethtypes.Header
+	err = json.Unmarshal(blockJson, &ethHeader)
+	if err != nil {
+		return nil, err
+	}
+	b.logger.Info("ethHeader", "ethHeader", ethHeader)
+
+	ethHash := ethHeader.Hash()
+	b.logger.Info("ethHash", "ethHash", ethHash)
+
+	formattedBlock["hash"] = ethHash
+
 	return formattedBlock, nil
 }
 
