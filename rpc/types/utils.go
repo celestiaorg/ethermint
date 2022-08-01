@@ -101,7 +101,7 @@ func FormatBlock(
 
 	result := map[string]interface{}{
 		"number":           hexutil.Uint64(header.Height),
-		"hash":             hexutil.Bytes(header.Hash()),
+		"tm_hash":          hexutil.Bytes(header.Hash()),
 		"parentHash":       common.BytesToHash(header.LastBlockID.Hash.Bytes()),
 		"nonce":            ethtypes.BlockNonce{},   // PoW specific
 		"sha3Uncles":       ethtypes.EmptyUncleHash, // No uncles in Tendermint
@@ -122,6 +122,8 @@ func FormatBlock(
 		"transactions":    transactions,
 		"totalDifficulty": (*hexutil.Big)(big.NewInt(0)),
 	}
+
+	// Can we make a "correct" ethtypes.Header?
 
 	if baseFee != nil {
 		result["baseFeePerGas"] = (*hexutil.Big)(baseFee)

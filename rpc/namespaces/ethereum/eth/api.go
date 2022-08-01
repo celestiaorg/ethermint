@@ -729,7 +729,7 @@ func (e *PublicAPI) EstimateGas(args evmtypes.TransactionArgs, blockNrOptional *
 
 // GetBlockByHash returns the block identified by hash.
 func (e *PublicAPI) GetBlockByHash(hash common.Hash, fullTx bool) (map[string]interface{}, error) {
-	e.logger.Debug("eth_getBlockByHash", "hash", hash.Hex(), "full", fullTx)
+	e.logger.Info("eth_getBlockByHash", "hash", hash.Hex(), "full", fullTx)
 	return e.backend.GetBlockByHash(hash, fullTx)
 }
 
@@ -872,6 +872,12 @@ func (e *PublicAPI) GetTransactionReceipt(hash common.Hash) (map[string]interfac
 		return nil, nil
 	}
 
+	ethBlock, err := e.backend.EthBlockFromTendermint(resBlock, true)
+	if err != nil {
+		e.logger.Debug("ethBlock not found", "height", res.Height, "error", err.Error())
+		return nil, nil
+	}
+
 	tx, err := e.clientCtx.TxConfig.TxDecoder()(res.Tx)
 	if err != nil {
 		e.logger.Debug("decoding failed", "error", err.Error())
@@ -957,7 +963,8 @@ func (e *PublicAPI) GetTransactionReceipt(hash common.Hash) (map[string]interfac
 
 		// Inclusion information: These fields provide information about the inclusion of the
 		// transaction corresponding to this receipt.
-		"blockHash":        common.BytesToHash(resBlock.Block.Header.Hash()).Hex(),
+		"blockHash": ethBlock["hash"],
+		// "blockHash":        common.BytesToHash(resBlock.Block.Header.Hash()).Hex(),
 		"blockNumber":      hexutil.Uint64(res.Height),
 		"transactionIndex": hexutil.Uint64(parsedTx.EthTxIndex),
 
