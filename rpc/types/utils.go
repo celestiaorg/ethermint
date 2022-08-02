@@ -90,7 +90,7 @@ func BlockMaxGasFromConsensusParams(goCtx context.Context, clientCtx client.Cont
 func FormatBlock(
 	header tmtypes.Header, size int, gasLimit int64,
 	gasUsed *big.Int, transactions []interface{}, bloom ethtypes.Bloom,
-	validatorAddr common.Address, baseFee *big.Int,
+	baseFee *big.Int,
 ) map[string]interface{} {
 	var transactionsRoot common.Hash
 	if len(transactions) == 0 {
@@ -107,7 +107,7 @@ func FormatBlock(
 		"sha3Uncles":       ethtypes.EmptyUncleHash, // No uncles in Tendermint
 		"logsBloom":        bloom,
 		"stateRoot":        hexutil.Bytes(header.AppHash),
-		"miner":            validatorAddr,
+		"miner":            header.ProposerAddress,
 		"mixHash":          common.Hash{},
 		"difficulty":       (*hexutil.Big)(big.NewInt(0)),
 		"extraData":        "0x",

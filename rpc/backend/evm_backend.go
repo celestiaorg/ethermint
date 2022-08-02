@@ -261,29 +261,29 @@ func (b *Backend) EthBlockFromTendermint(
 		b.logger.Debug("failed to query BlockBloom", "height", block.Height, "error", err.Error())
 	}
 
-	b.logger.Info("ProposerAddress", "block.Header.ProposerAddress", block.Header.ProposerAddress)
-	req := &evmtypes.QueryValidatorAccountRequest{
-		ConsAddress: sdk.ConsAddress(block.Header.ProposerAddress).String(),
-	}
+	// b.logger.Info("ProposerAddress", "block.Header.ProposerAddress", block.Header.ProposerAddress)
+	// req := &evmtypes.QueryValidatorAccountRequest{
+	// 	ConsAddress: sdk.ConsAddress(block.Header.ProposerAddress).String(),
+	// }
 
 	ctx := types.ContextWithHeight(block.Height)
-	res, err := b.queryClient.ValidatorAccount(ctx, req)
-	if err != nil {
-		b.logger.Debug(
-			"failed to query validator operator address",
-			"height", block.Height,
-			"cons-address", req.ConsAddress,
-			"error", err.Error(),
-		)
-		return nil, err
-	}
+	// res, err := b.queryClient.ValidatorAccount(ctx, req)
+	// if err != nil {
+	// 	b.logger.Debug(
+	// 		"failed to query validator operator address",
+	// 		"height", block.Height,
+	// 		"cons-address", req.ConsAddress,
+	// 		"error", err.Error(),
+	// 	)
+	// 	return nil, err
+	// }
 
-	addr, err := sdk.AccAddressFromBech32(res.AccountAddress)
-	if err != nil {
-		return nil, err
-	}
+	// addr, err := sdk.AccAddressFromBech32(res.AccountAddress)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	validatorAddr := common.BytesToAddress(addr)
+	// validatorAddr := common.BytesToAddress(addr)
 
 	gasLimit, err := types.BlockMaxGasFromConsensusParams(ctx, b.clientCtx, block.Height)
 	if err != nil {
@@ -304,7 +304,7 @@ func (b *Backend) EthBlockFromTendermint(
 	formattedBlock := types.FormatBlock(
 		block.Header, block.Size(),
 		gasLimit, new(big.Int).SetUint64(gasUsed),
-		ethRPCTxs, bloom, validatorAddr, baseFee,
+		ethRPCTxs, bloom, baseFee,
 	)
 
 	blockJson, err := json.Marshal(formattedBlock)
