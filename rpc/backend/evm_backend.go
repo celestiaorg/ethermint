@@ -305,7 +305,7 @@ func (b *Backend) EthBlockFromTendermint(
 	formattedBlock := types.FormatBlock(
 		block.Header, block.Size(),
 		gasLimit, new(big.Int).SetUint64(gasUsed),
-		ethRPCTxs, bloom, baseFee,
+		ethRPCTxs, bloom, nil,
 	)
 
 	blockJson, err := json.Marshal(formattedBlock)
