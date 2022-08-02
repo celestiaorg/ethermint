@@ -222,6 +222,7 @@ func (b *Backend) EthBlockFromTendermint(
 ) (map[string]interface{}, error) {
 	ethRPCTxs := []interface{}{}
 	block := resBlock.Block
+	b.logger.Info("EthBlockFromTendermint", "block.DataHash", block.DataHash)
 
 	baseFee, err := b.BaseFee(block.Height)
 	if err != nil {
