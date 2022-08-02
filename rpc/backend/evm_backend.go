@@ -261,6 +261,7 @@ func (b *Backend) EthBlockFromTendermint(
 		b.logger.Debug("failed to query BlockBloom", "height", block.Height, "error", err.Error())
 	}
 
+	b.logger.Info("ProposerAddress", "block.Header.ProposerAddress", block.Header.ProposerAddress)
 	req := &evmtypes.QueryValidatorAccountRequest{
 		ConsAddress: sdk.ConsAddress(block.Header.ProposerAddress).String(),
 	}
