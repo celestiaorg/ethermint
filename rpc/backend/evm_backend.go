@@ -220,14 +220,15 @@ func (b *Backend) EthBlockFromTendermint(
 	resBlock *tmrpctypes.ResultBlock,
 	fullTx bool,
 ) (map[string]interface{}, error) {
-	ethRPCTxs := []interface{}{}
 	block := resBlock.Block
 	b.logger.Info("EthBlockFromTendermint", "block.DataHash", block.DataHash)
 
-	baseFee, err := b.BaseFee(block.Height)
-	if err != nil {
-		return nil, err
-	}
+	// TODO(jbowen93): Base Fee shouldn't be hardcoded to 0
+	baseFee := big.NewInt(0)
+	// baseFee, err := b.BaseFee(block.Height)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	resBlockResult, err := b.clientCtx.Client.BlockResults(b.ctx, &block.Height)
 	if err != nil {
@@ -240,8 +241,6 @@ func (b *Backend) EthBlockFromTendermint(
 	}
 
 	ctx := types.ContextWithHeight(block.Height)
-
-	msgs := b.GetEthereumMsgsFromTendermintBlock(resBlock, resBlockResult)
 
 	gasLimit, err := types.BlockMaxGasFromConsensusParams(ctx, b.clientCtx, block.Height)
 	if err != nil {
@@ -258,14 +257,14 @@ func (b *Backend) EthBlockFromTendermint(
 		}
 		gasUsed += uint64(txsResult.GetGasUsed())
 	}
-
-	// TODO(jbowen93): Base Fee shouldn't be hardcoded to 0
-	formattedBlock := types.FormatBlock(
-		block.Header, block.Size(),
-		gasLimit, new(big.Int).SetUint64(gasUsed),
-		bloom, msgs, big.NewInt(0),
-	)
-
+	msgs := b.GetEthereumMsgsFromTendermintBlock(resBlock, resBlockResult)
+	var transactionsRoot common.Hash
+	if len(msgs) == 0 {
+		transactionsRoot = ethtypes.EmptyRootHash
+	} else {
+		transactionsRoot = common.BytesToHash(block.Header.DataHash)
+	}
+	formattedBlock := types.FormatBlock(block.Header, block.Size(), gasLimit, new(big.Int).SetUint64(gasUsed), bloom, transactionsRoot, baseFee)
 	blockJson, err := json.Marshal(formattedBlock)
 	if err != nil {
 		return nil, err
@@ -282,6 +281,7 @@ func (b *Backend) EthBlockFromTendermint(
 	b.logger.Info("ethHash", "ethHash", ethHash)
 	formattedBlock["hash"] = ethHash
 
+	ethRPCTxs := []interface{}{}
 	for txIndex, ethMsg := range msgs {
 		if !fullTx {
 			hash := common.HexToHash(ethMsg.Hash)
