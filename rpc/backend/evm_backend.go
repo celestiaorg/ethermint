@@ -241,6 +241,8 @@ func (b *Backend) EthBlockFromTendermint(
 
 	ctx := types.ContextWithHeight(block.Height)
 
+	msgs := b.GetEthereumMsgsFromTendermintBlock(resBlock, resBlockResult)
+
 	gasLimit, err := types.BlockMaxGasFromConsensusParams(ctx, b.clientCtx, block.Height)
 	if err != nil {
 		b.logger.Error("failed to query consensus params", "error", err.Error())
@@ -261,7 +263,7 @@ func (b *Backend) EthBlockFromTendermint(
 	formattedBlock := types.FormatBlock(
 		block.Header, block.Size(),
 		gasLimit, new(big.Int).SetUint64(gasUsed),
-		bloom, big.NewInt(0),
+		bloom, msgs, big.NewInt(0),
 	)
 
 	blockJson, err := json.Marshal(formattedBlock)
@@ -280,7 +282,6 @@ func (b *Backend) EthBlockFromTendermint(
 	b.logger.Info("ethHash", "ethHash", ethHash)
 	formattedBlock["hash"] = ethHash
 
-	msgs := b.GetEthereumMsgsFromTendermintBlock(resBlock, resBlockResult)
 	for txIndex, ethMsg := range msgs {
 		if !fullTx {
 			hash := common.HexToHash(ethMsg.Hash)
@@ -302,14 +303,7 @@ func (b *Backend) EthBlockFromTendermint(
 		}
 		ethRPCTxs = append(ethRPCTxs, rpcTx)
 	}
-	transactionsRoot := common.Hash{}
-	if len(ethRPCTxs) == 0 {
-		transactionsRoot = ethtypes.EmptyRootHash
-	} else {
-		transactionsRoot = common.BytesToHash(block.Header.DataHash)
-	}
 	formattedBlock["transactions"] = ethRPCTxs
-	formattedBlock["transactionsRoot"] = transactionsRoot
 
 	return formattedBlock, nil
 }
