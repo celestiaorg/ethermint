@@ -18,6 +18,7 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/ethereum/go-ethereum/trie"
 
 	tmrpctypes "github.com/tendermint/tendermint/rpc/core/types"
 
@@ -257,30 +258,35 @@ func (b *Backend) EthBlockFromTendermint(
 		}
 		gasUsed += uint64(txsResult.GetGasUsed())
 	}
+
 	msgs := b.GetEthereumMsgsFromTendermintBlock(resBlock, resBlockResult)
+	ethTxs := []*ethtypes.Transaction{}
+	for _, ethMsg := range msgs {
+		tx := ethMsg.AsTransaction()
+		ethTxs = append(ethTxs, tx)
+	}
 	var transactionsRoot common.Hash
 	if len(msgs) == 0 {
 		transactionsRoot = ethtypes.EmptyRootHash
 	} else {
+		hasher := trie.NewStackTrie(nil)
+		transactionsRoot = ethtypes.DeriveSha(ethtypes.Transactions(ethTxs), hasher)
 		transactionsRoot = common.BytesToHash(block.Header.DataHash)
 	}
-	formattedBlock := types.FormatBlock(block.Header, block.Size(), gasLimit, new(big.Int).SetUint64(gasUsed), bloom, transactionsRoot, baseFee)
+	formattedBlock := types.FormatBlock(block.Header, block.Size(), gasLimit, new(big.Int).SetUint64(gasUsed), bloom, baseFee)
+
 	blockJson, err := json.Marshal(formattedBlock)
 	if err != nil {
 		return nil, err
 	}
-	b.logger.Info("headerJson", "headerJson", string(blockJson))
 	var ethHeader ethtypes.Header
 	err = json.Unmarshal(blockJson, &ethHeader)
 	if err != nil {
 		return nil, err
 	}
 	b.logger.Info("ethHeader", "ethHeader", ethHeader)
-
 	ethHash := ethHeader.Hash()
 	b.logger.Info("ethHash", "ethHash", ethHash)
-	formattedBlock["hash"] = ethHash
-
 	ethRPCTxs := []interface{}{}
 	for txIndex, ethMsg := range msgs {
 		if !fullTx {
@@ -303,8 +309,9 @@ func (b *Backend) EthBlockFromTendermint(
 		}
 		ethRPCTxs = append(ethRPCTxs, rpcTx)
 	}
+	formattedBlock["hash"] = ethHash
+	formattedBlock["transactionsRoot"] = transactionsRoot
 	formattedBlock["transactions"] = ethRPCTxs
-
 	return formattedBlock, nil
 }
 
