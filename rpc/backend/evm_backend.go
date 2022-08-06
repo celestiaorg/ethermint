@@ -273,7 +273,7 @@ func (b *Backend) EthBlockFromTendermint(
 		transactionsRoot = ethtypes.DeriveSha(ethtypes.Transactions(ethTxs), hasher)
 		transactionsRoot = common.BytesToHash(block.Header.DataHash)
 	}
-	formattedBlock := types.FormatBlock(block.Header, block.Size(), gasLimit, new(big.Int).SetUint64(gasUsed), bloom, baseFee)
+	formattedBlock := types.FormatBlock(block.Header, block.Size(), gasLimit, new(big.Int).SetUint64(gasUsed), transactionsRoot, bloom, baseFee)
 
 	blockJson, err := json.Marshal(formattedBlock)
 	if err != nil {
