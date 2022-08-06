@@ -265,6 +265,11 @@ func (b *Backend) EthBlockFromTendermint(
 		tx := ethMsg.AsTransaction()
 		ethTxs = append(ethTxs, tx)
 	}
+	JSONtxs, err := json.MarshalIndent(ethTxs, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("JSONtxs: %s\n", string(JSONtxs))
 	var transactionsRoot common.Hash
 	if len(msgs) == 0 {
 		transactionsRoot = ethtypes.EmptyRootHash
