@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"math/big"
+	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -165,6 +166,50 @@ func (k Keeper) GetTxIndexTransient(ctx sdk.Context) uint64 {
 	}
 
 	return sdk.BigEndianToUint64(bz)
+}
+
+func (k Keeper) SetTx(ctx sdk.Context, index uint, tx *ethtypes.Transaction) {
+	store := ctx.TransientStore(k.transientKey)
+	data, err := tx.MarshalBinary()
+	if err != nil {
+		panic(err)
+	}
+	store.Set(append(types.KeyPrefixTransientTransaction, []byte(strconv.Itoa(int(index)))...), data)
+}
+
+func (k Keeper) GetTx(ctx sdk.Context, index uint) *ethtypes.Transaction {
+	store := ctx.TransientStore(k.transientKey)
+	txData := store.Get(append(types.KeyPrefixTransientTransaction, []byte(strconv.Itoa(int(index)))...))
+	parsedTx := &ethtypes.Transaction{}
+	if err := parsedTx.UnmarshalBinary(txData); err != nil {
+		panic(err)
+	}
+	return parsedTx
+}
+
+func (k Keeper) GetTxs(ctx sdk.Context) []*ethtypes.Transaction {
+	store := ctx.TransientStore(k.transientKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.KeyPrefixTransientTransaction)
+	ethereumTxs := []*ethtypes.Transaction{}
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		parsedTx := &ethtypes.Transaction{}
+		if err := parsedTx.UnmarshalBinary(iterator.Value()); err != nil {
+			panic(err)
+		}
+		ethereumTxs = append(ethereumTxs, parsedTx)
+	}
+	return ethereumTxs
+}
+
+// EmitBlockBloomEvent emit block bloom events
+func (k Keeper) EmitTxRootEvent(ctx sdk.Context, txRoot common.Hash) {
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeTxRoot,
+			sdk.NewAttribute(types.AttributeKeyEthereumTxRoot, txRoot.String()),
+		),
+	)
 }
 
 // ----------------------------------------------------------------------------

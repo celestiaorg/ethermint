@@ -269,14 +269,13 @@ func (b *Backend) EthBlockFromTendermint(
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("JSONtxs: %s\n", string(JSONtxs))
+	fmt.Printf("EVM Backend txs: %s\n", string(JSONtxs))
 	var transactionsRoot common.Hash
 	if len(msgs) == 0 {
 		transactionsRoot = ethtypes.EmptyRootHash
 	} else {
 		hasher := trie.NewStackTrie(nil)
 		transactionsRoot = ethtypes.DeriveSha(ethtypes.Transactions(ethTxs), hasher)
-		transactionsRoot = common.BytesToHash(block.Header.DataHash)
 	}
 	formattedBlock := types.FormatBlock(block.Header, block.Size(), gasLimit, new(big.Int).SetUint64(gasUsed), transactionsRoot, bloom, baseFee)
 
@@ -315,7 +314,7 @@ func (b *Backend) EthBlockFromTendermint(
 		ethRPCTxs = append(ethRPCTxs, rpcTx)
 	}
 	formattedBlock["hash"] = ethHash
-	formattedBlock["transactionsRoot"] = transactionsRoot
+	// formattedBlock["transactionsRoot"] = transactionsRoot
 	formattedBlock["transactions"] = ethRPCTxs
 	return formattedBlock, nil
 }
