@@ -33,6 +33,7 @@ const (
 	prefixTransientTxIndex
 	prefixTransientLogSize
 	prefixTransientGasUsed
+	prefixTransientTransaction
 )
 
 // KVStore key prefixes
@@ -43,10 +44,11 @@ var (
 
 // Transient Store key prefixes
 var (
-	KeyPrefixTransientBloom   = []byte{prefixTransientBloom}
-	KeyPrefixTransientTxIndex = []byte{prefixTransientTxIndex}
-	KeyPrefixTransientLogSize = []byte{prefixTransientLogSize}
-	KeyPrefixTransientGasUsed = []byte{prefixTransientGasUsed}
+	KeyPrefixTransientBloom       = []byte{prefixTransientBloom}
+	KeyPrefixTransientTxIndex     = []byte{prefixTransientTxIndex}
+	KeyPrefixTransientLogSize     = []byte{prefixTransientLogSize}
+	KeyPrefixTransientGasUsed     = []byte{prefixTransientGasUsed}
+	KeyPrefixTransientTransaction = []byte{prefixTransientTransaction}
 )
 
 // AddressStoragePrefix returns a prefix to iterate over a given account storage.

@@ -18,6 +18,7 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/ethereum/go-ethereum/trie"
 
 	tmrpctypes "github.com/tendermint/tendermint/rpc/core/types"
 
@@ -220,40 +221,19 @@ func (b *Backend) EthBlockFromTendermint(
 	resBlock *tmrpctypes.ResultBlock,
 	fullTx bool,
 ) (map[string]interface{}, error) {
-	ethRPCTxs := []interface{}{}
 	block := resBlock.Block
+	b.logger.Info("EthBlockFromTendermint", "block.DataHash", block.DataHash)
 
-	baseFee, err := b.BaseFee(block.Height)
-	if err != nil {
-		return nil, err
-	}
+	// TODO(jbowen93): Base Fee shouldn't be hardcoded to 0
+	baseFee := big.NewInt(0)
+	// baseFee, err := b.BaseFee(block.Height)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	resBlockResult, err := b.clientCtx.Client.BlockResults(b.ctx, &block.Height)
 	if err != nil {
 		return nil, err
-	}
-
-	msgs := b.GetEthereumMsgsFromTendermintBlock(resBlock, resBlockResult)
-	for txIndex, ethMsg := range msgs {
-		if !fullTx {
-			hash := common.HexToHash(ethMsg.Hash)
-			ethRPCTxs = append(ethRPCTxs, hash)
-			continue
-		}
-
-		tx := ethMsg.AsTransaction()
-		rpcTx, err := types.NewRPCTransaction(
-			tx,
-			common.BytesToHash(block.Hash()),
-			uint64(block.Height),
-			uint64(txIndex),
-			baseFee,
-		)
-		if err != nil {
-			b.logger.Debug("NewTransactionFromData for receipt failed", "hash", tx.Hash().Hex(), "error", err.Error())
-			continue
-		}
-		ethRPCTxs = append(ethRPCTxs, rpcTx)
 	}
 
 	bloom, err := b.BlockBloom(&block.Height)
@@ -261,28 +241,7 @@ func (b *Backend) EthBlockFromTendermint(
 		b.logger.Debug("failed to query BlockBloom", "height", block.Height, "error", err.Error())
 	}
 
-	req := &evmtypes.QueryValidatorAccountRequest{
-		ConsAddress: sdk.ConsAddress(block.Header.ProposerAddress).String(),
-	}
-
 	ctx := types.ContextWithHeight(block.Height)
-	res, err := b.queryClient.ValidatorAccount(ctx, req)
-	if err != nil {
-		b.logger.Debug(
-			"failed to query validator operator address",
-			"height", block.Height,
-			"cons-address", req.ConsAddress,
-			"error", err.Error(),
-		)
-		return nil, err
-	}
-
-	addr, err := sdk.AccAddressFromBech32(res.AccountAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	validatorAddr := common.BytesToAddress(addr)
 
 	gasLimit, err := types.BlockMaxGasFromConsensusParams(ctx, b.clientCtx, block.Height)
 	if err != nil {
@@ -300,11 +259,63 @@ func (b *Backend) EthBlockFromTendermint(
 		gasUsed += uint64(txsResult.GetGasUsed())
 	}
 
-	formattedBlock := types.FormatBlock(
-		block.Header, block.Size(),
-		gasLimit, new(big.Int).SetUint64(gasUsed),
-		ethRPCTxs, bloom, validatorAddr, baseFee,
-	)
+	msgs := b.GetEthereumMsgsFromTendermintBlock(resBlock, resBlockResult)
+	ethTxs := []*ethtypes.Transaction{}
+	for _, ethMsg := range msgs {
+		tx := ethMsg.AsTransaction()
+		ethTxs = append(ethTxs, tx)
+	}
+	JSONtxs, err := json.MarshalIndent(ethTxs, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("EVM Backend txs: %s\n", string(JSONtxs))
+	var transactionsRoot common.Hash
+	if len(msgs) == 0 {
+		transactionsRoot = ethtypes.EmptyRootHash
+	} else {
+		hasher := trie.NewStackTrie(nil)
+		transactionsRoot = ethtypes.DeriveSha(ethtypes.Transactions(ethTxs), hasher)
+	}
+	formattedBlock := types.FormatBlock(block.Header, block.Size(), gasLimit, new(big.Int).SetUint64(gasUsed), transactionsRoot, bloom, baseFee)
+
+	blockJson, err := json.Marshal(formattedBlock)
+	if err != nil {
+		return nil, err
+	}
+	var ethHeader ethtypes.Header
+	err = json.Unmarshal(blockJson, &ethHeader)
+	if err != nil {
+		return nil, err
+	}
+	b.logger.Info("ethHeader", "ethHeader", ethHeader)
+	ethHash := ethHeader.Hash()
+	b.logger.Info("ethHash", "ethHash", ethHash)
+	ethRPCTxs := []interface{}{}
+	for txIndex, ethMsg := range msgs {
+		if !fullTx {
+			hash := common.HexToHash(ethMsg.Hash)
+			ethRPCTxs = append(ethRPCTxs, hash)
+			continue
+		}
+
+		tx := ethMsg.AsTransaction()
+		rpcTx, err := types.NewRPCTransaction(
+			tx,
+			ethHash,
+			uint64(block.Height),
+			uint64(txIndex),
+			baseFee,
+		)
+		if err != nil {
+			b.logger.Debug("NewTransactionFromData for receipt failed", "hash", tx.Hash().Hex(), "error", err.Error())
+			continue
+		}
+		ethRPCTxs = append(ethRPCTxs, rpcTx)
+	}
+	formattedBlock["hash"] = ethHash
+	// formattedBlock["transactionsRoot"] = transactionsRoot
+	formattedBlock["transactions"] = ethRPCTxs
 	return formattedBlock, nil
 }
 

@@ -872,6 +872,12 @@ func (e *PublicAPI) GetTransactionReceipt(hash common.Hash) (map[string]interfac
 		return nil, nil
 	}
 
+	ethBlock, err := e.backend.EthBlockFromTendermint(resBlock, true)
+	if err != nil {
+		e.logger.Debug("ethBlock not found", "height", res.Height, "error", err.Error())
+		return nil, nil
+	}
+
 	tx, err := e.clientCtx.TxConfig.TxDecoder()(res.Tx)
 	if err != nil {
 		e.logger.Debug("decoding failed", "error", err.Error())
@@ -957,7 +963,8 @@ func (e *PublicAPI) GetTransactionReceipt(hash common.Hash) (map[string]interfac
 
 		// Inclusion information: These fields provide information about the inclusion of the
 		// transaction corresponding to this receipt.
-		"blockHash":        common.BytesToHash(resBlock.Block.Header.Hash()).Hex(),
+		"blockHash": ethBlock["hash"],
+		// "blockHash":        common.BytesToHash(resBlock.Block.Header.Hash()).Hex(),
 		"blockNumber":      hexutil.Uint64(res.Height),
 		"transactionIndex": hexutil.Uint64(parsedTx.EthTxIndex),
 

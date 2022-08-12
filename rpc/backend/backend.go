@@ -80,6 +80,8 @@ type EVMBackend interface {
 	ChainConfig() *params.ChainConfig
 	SetTxDefaults(args evmtypes.TransactionArgs) (evmtypes.TransactionArgs, error)
 	GetEthereumMsgsFromTendermintBlock(block *tmrpctypes.ResultBlock, blockRes *tmrpctypes.ResultBlockResults) []*evmtypes.MsgEthereumTx
+
+	EthBlockFromTendermint(resBlock *tmrpctypes.ResultBlock, fullTx bool) (map[string]interface{}, error)
 }
 
 var _ BackendI = (*Backend)(nil)
