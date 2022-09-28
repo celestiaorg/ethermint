@@ -277,7 +277,22 @@ func (b *Backend) EthBlockFromTendermint(
 		hasher := trie.NewStackTrie(nil)
 		transactionsRoot = ethtypes.DeriveSha(ethtypes.Transactions(ethTxs), hasher)
 	}
-	formattedBlock := types.FormatBlock(block.Header, block.Size(), gasLimit, new(big.Int).SetUint64(gasUsed), transactionsRoot, bloom, baseFee)
+
+	var receiptRoot common.Hash
+	for _, event := range resBlockResult.EndBlockEvents {
+		if event.Type != "receipt_root" {
+			continue
+		}
+		for _, attr := range event.Attributes {
+			if bytes.Equal(attr.Key, []byte("receiptRoot")) {
+				receiptRoot = common.HexToHash(string(attr.Value))
+				break
+			}
+		}
+	}
+	b.logger.Info("receiptRoot", "receiptRoot", receiptRoot)
+
+	formattedBlock := types.FormatBlock(block.Header, block.Size(), gasLimit, new(big.Int).SetUint64(gasUsed), transactionsRoot, receiptRoot, bloom, baseFee)
 
 	blockJson, err := json.Marshal(formattedBlock)
 	if err != nil {

@@ -931,6 +931,10 @@ func (e *PublicAPI) GetTransactionReceipt(hash common.Hash) (map[string]interfac
 	if err != nil {
 		e.logger.Debug("failed to parse logs", "hash", hexTx, "error", err.Error())
 	}
+	ethHash := ethBlock["hash"]
+	for i := range logs {
+		logs[i].BlockHash = ethHash.(common.Hash)
+	}
 
 	if parsedTx.EthTxIndex == -1 {
 		// Fallback to find tx index by iterating all valid eth transactions

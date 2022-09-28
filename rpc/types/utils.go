@@ -89,19 +89,20 @@ func BlockMaxGasFromConsensusParams(goCtx context.Context, clientCtx client.Cont
 // transactions.
 func FormatBlock(
 	header tmtypes.Header, size int, gasLimit int64,
-	gasUsed *big.Int, txRoot common.Hash, bloom ethtypes.Bloom,
+	gasUsed *big.Int, txRoot, receiptRoot common.Hash, bloom ethtypes.Bloom,
 	baseFee *big.Int,
 ) map[string]interface{} {
 
 	result := map[string]interface{}{
-		"number":           hexutil.Uint64(header.Height),
-		"tm_hash":          hexutil.Bytes(header.Hash()),
-		"parentHash":       common.BytesToHash(header.LastBlockID.Hash.Bytes()),
-		"nonce":            ethtypes.BlockNonce{},   // PoW specific
-		"sha3Uncles":       ethtypes.EmptyUncleHash, // No uncles in Tendermint
-		"logsBloom":        bloom,
-		"stateRoot":        hexutil.Bytes(header.AppHash),
-		"miner":            common.BytesToAddress(header.ProposerAddress),
+		"number":     hexutil.Uint64(header.Height),
+		"tm_hash":    hexutil.Bytes(header.Hash()),
+		"parentHash": common.BytesToHash(header.LastBlockID.Hash.Bytes()),
+		"nonce":      ethtypes.BlockNonce{},   // PoW specific
+		"sha3Uncles": ethtypes.EmptyUncleHash, // No uncles in Tendermint
+		"logsBloom":  bloom,
+		"stateRoot":  hexutil.Bytes(header.AppHash),
+		"miner":      common.BytesToAddress(header.ProposerAddress),
+		// TODO(jbowen93): Implement EIP 4399 (https://eips.ethereum.org/EIPS/eip-4399)
 		"mixHash":          common.Hash{},
 		"difficulty":       (*hexutil.Big)(big.NewInt(0)),
 		"extraData":        "0x",
@@ -110,7 +111,7 @@ func FormatBlock(
 		"gasUsed":          (*hexutil.Big)(gasUsed),
 		"timestamp":        hexutil.Uint64(header.Time.Unix()),
 		"transactionsRoot": txRoot,
-		"receiptsRoot":     ethtypes.EmptyRootHash,
+		"receiptsRoot":     receiptRoot,
 		"uncles":           []common.Hash{},
 		// "transactions":     txs,
 		"totalDifficulty": (*hexutil.Big)(big.NewInt(0)),

@@ -278,6 +278,7 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethtypes.Transaction) (*t
 	}
 
 	k.SetTx(ctx, txConfig.TxIndex, tx)
+	k.SetReceipt(ctx, txConfig.TxIndex, receipt)
 
 	// refund gas in order to match the Ethereum gas consumption instead of the default SDK one.
 	if err = k.RefundGas(ctx, msg, msg.Gas()-res.GasUsed, cfg.Params.EvmDenom); err != nil {

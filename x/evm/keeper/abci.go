@@ -44,5 +44,21 @@ func (k *Keeper) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.Vali
 	fmt.Printf("End Block TxRoot: %s\n", txRoot)
 	k.EmitTxRootEvent(ctx, txRoot)
 
+	receipts := k.GetReceipts(ctx)
+	JSONreceipts, err := json.MarshalIndent(receipts, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("End Block Receipts: %s\n", string(JSONreceipts))
+	var receiptRoot common.Hash
+	if len(receipts) == 0 {
+		receiptRoot = ethtypes.EmptyRootHash
+	} else {
+		hasher := trie.NewStackTrie(nil)
+		receiptRoot = ethtypes.DeriveSha(ethtypes.Receipts(receipts), hasher)
+	}
+	fmt.Printf("End Block ReceiptRoot: %s\n", receiptRoot)
+	k.EmitReceiptRootEvent(ctx, receiptRoot)
+
 	return []abci.ValidatorUpdate{}
 }
