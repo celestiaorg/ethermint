@@ -36,34 +36,6 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 # Changelog
 
-## [v0.16.0] - 2022-06-06
-
-### State Machine Breaking
-
-* (feemarket) [tharsis#1105](https://github.com/tharsis/ethermint/pull/1105) Update `BaseFee` calculation based on `GasWanted` instead of `GasUsed`.
-
-### API Breaking
-
-* (feemarket) [tharsis#1104](https://github.com/tharsis/ethermint/pull/1104) Enforce a minimum gas price for Cosmos and EVM transactions through the `MinGasPrice` parameter.
-* (rpc) [tharsis#1081](https://github.com/tharsis/ethermint/pull/1081) Deduplicate some json-rpc logic codes, cleanup several dead functions.
-* (ante) [tharsis#1062](https://github.com/tharsis/ethermint/pull/1062) Emit event of eth tx hash in ante handler to support query failed transactions.
-* (analytics) [tharsis#1106](https://github.com/tharsis/ethermint/pull/1106) Update telemetry to Ethermint modules.
-* (rpc) [tharsis#1108](https://github.com/tharsis/ethermint/pull/1108) Update GetGasPrice RPC endpoint with global `MinGasPrice`
-
-* (ante) [tharsis#964](https://github.com/tharsis/ethermint/pull/964) add NewInfiniteGasMeterWithLimit for storing the user provided gas limit. Fixes block's consumed gas calculation in the block creation phase.
-
-* (cli) [tharsis#1086](https://github.com/tharsis/ethermint/pull/1086) Add rollback command.
-* (specs) [tharsis#1095](https://github.com/tharsis/ethermint/pull/1095) Add more evm specs concepts.
-* (evm) [tharsis#1101](https://github.com/tharsis/ethermint/pull/1101) Add tx_type, gas and counter telemetry for ethereum txs.
-
-### Bug Fixes
-
-* (rpc) [tharsis#1082](https://github.com/tharsis/ethermint/pull/1082) fix gas price returned in getTransaction api.
-* (evm) [tharsis#1088](https://github.com/tharsis/ethermint/pull/1088) Fix ability to append log in tx post processing.
-* (rpc) [tharsis#1081](https://github.com/tharsis/ethermint/pull/1081) fix `debug_getBlockRlp`/`debug_printBlock` don't filter failed transactions.
-* (ante) [tharsis#1111](https://github.com/tharsis/ethermint/pull/1111) Move CanTransfer decorator before GasConsume decorator
-* (types) [tharsis#1112](https://github.com/cosmos/ethermint/pull/1112) Add `GetBaseAccount` to avoid invalid account error when create vesting account.
-
 ## [v0.15.0] - 2022-05-09
 
 ### State Machine Breaking
