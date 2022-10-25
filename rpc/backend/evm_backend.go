@@ -20,7 +20,6 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 
 	tmrpctypes "github.com/tendermint/tendermint/rpc/core/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -71,7 +70,7 @@ func (b *Backend) GetBlockByNumber(blockNum types.BlockNumber, fullTx bool) (map
 		return nil, nil
 	}
 
-	res, err := b.EthBlockFromTendermint(resBlock.Block, fullTx)
+	res, err := b.EthBlockFromTendermint(resBlock, fullTx)
 	if err != nil {
 		b.logger.Debug("EthBlockFromTendermint failed", "height", blockNum, "error", err.Error())
 		return nil, err
@@ -82,61 +81,36 @@ func (b *Backend) GetBlockByNumber(blockNum types.BlockNumber, fullTx bool) (map
 
 // GetBlockByHash returns the block identified by hash.
 func (b *Backend) GetBlockByHash(hash common.Hash, fullTx bool) (map[string]interface{}, error) {
-	resBlock, err := b.clientCtx.Client.BlockByHash(b.ctx, hash.Bytes())
+	resBlock, err := b.GetTendermintBlockByHash(hash)
 	if err != nil {
-		b.logger.Debug("BlockByHash block not found", "hash", hash.Hex(), "error", err.Error())
 		return nil, err
 	}
-
-	if resBlock == nil || resBlock.Block == nil {
-		b.logger.Debug("BlockByHash block not found", "hash", hash.Hex())
+	if resBlock == nil {
+		// block not found
 		return nil, nil
 	}
 
-	return b.EthBlockFromTendermint(resBlock.Block, fullTx)
+	return b.EthBlockFromTendermint(resBlock, fullTx)
 }
 
 // BlockByNumber returns the block identified by number.
 func (b *Backend) BlockByNumber(blockNum types.BlockNumber) (*ethtypes.Block, error) {
-	height := blockNum.Int64()
-
-	switch blockNum {
-	case types.EthLatestBlockNumber:
-		currentBlockNumber, _ := b.BlockNumber()
-		if currentBlockNumber > 0 {
-			height = int64(currentBlockNumber)
-		}
-	case types.EthPendingBlockNumber:
-		currentBlockNumber, _ := b.BlockNumber()
-		if currentBlockNumber > 0 {
-			height = int64(currentBlockNumber)
-		}
-	case types.EthEarliestBlockNumber:
-		height = 1
-	default:
-		if blockNum < 0 {
-			return nil, errors.Errorf("incorrect block height: %d", height)
-		}
-	}
-
-	resBlock, err := b.clientCtx.Client.Block(b.ctx, &height)
+	resBlock, err := b.GetTendermintBlockByNumber(blockNum)
 	if err != nil {
-		b.logger.Debug("HeaderByNumber failed", "height", height)
 		return nil, err
 	}
-
-	if resBlock == nil || resBlock.Block == nil {
-		return nil, errors.Errorf("block not found for height %d", height)
+	if resBlock == nil {
+		// block not found
+		return nil, errors.Errorf("block not found for height %d", blockNum)
 	}
 
-	return b.EthBlockFromTm(resBlock.Block)
+	return b.EthBlockFromTm(resBlock)
 }
 
 // BlockByHash returns the block identified by hash.
 func (b *Backend) BlockByHash(hash common.Hash) (*ethtypes.Block, error) {
-	resBlock, err := b.clientCtx.Client.BlockByHash(b.ctx, hash.Bytes())
+	resBlock, err := b.GetTendermintBlockByHash(hash)
 	if err != nil {
-		b.logger.Debug("HeaderByHash failed", "hash", hash.Hex())
 		return nil, err
 	}
 
@@ -144,10 +118,11 @@ func (b *Backend) BlockByHash(hash common.Hash) (*ethtypes.Block, error) {
 		return nil, errors.Errorf("block not found for hash %s", hash)
 	}
 
-	return b.EthBlockFromTm(resBlock.Block)
+	return b.EthBlockFromTm(resBlock)
 }
 
-func (b *Backend) EthBlockFromTm(block *tmtypes.Block) (*ethtypes.Block, error) {
+func (b *Backend) EthBlockFromTm(resBlock *tmrpctypes.ResultBlock) (*ethtypes.Block, error) {
+	block := resBlock.Block
 	height := block.Height
 	bloom, err := b.BlockBloom(&height)
 	if err != nil {
@@ -162,23 +137,16 @@ func (b *Backend) EthBlockFromTm(block *tmtypes.Block) (*ethtypes.Block, error) 
 
 	ethHeader := types.EthHeaderFromTendermint(block.Header, bloom, baseFee)
 
-	var txs []*ethtypes.Transaction
-	for _, txBz := range block.Txs {
-		tx, err := b.clientCtx.TxConfig.TxDecoder()(txBz)
-		if err != nil {
-			b.logger.Debug("failed to decode transaction in block", "height", height, "error", err.Error())
-			continue
-		}
+	resBlockResult, err := b.clientCtx.Client.BlockResults(b.ctx, &block.Height)
+	if err != nil {
+		return nil, err
+	}
 
-		for _, msg := range tx.GetMsgs() {
-			ethMsg, ok := msg.(*evmtypes.MsgEthereumTx)
-			if !ok {
-				continue
-			}
+	msgs := b.GetEthereumMsgsFromTendermintBlock(resBlock, resBlockResult)
 
-			tx := ethMsg.AsTransaction()
-			txs = append(txs, tx)
-		}
+	txs := make([]*ethtypes.Transaction, len(msgs))
+	for i, ethMsg := range msgs {
+		txs[i] = ethMsg.AsTransaction()
 	}
 
 	// TODO: add tx receipts
@@ -189,38 +157,22 @@ func (b *Backend) EthBlockFromTm(block *tmtypes.Block) (*ethtypes.Block, error) 
 // GetTendermintBlockByNumber returns a Tendermint format block by block number
 func (b *Backend) GetTendermintBlockByNumber(blockNum types.BlockNumber) (*tmrpctypes.ResultBlock, error) {
 	height := blockNum.Int64()
-	currentBlockNumber, _ := b.BlockNumber()
-
-	switch blockNum {
-	case types.EthLatestBlockNumber:
-		if currentBlockNumber > 0 {
-			height = int64(currentBlockNumber)
+	if height <= 0 {
+		// fetch the latest block number from the app state, more accurate than the tendermint block store state.
+		n, err := b.BlockNumber()
+		if err != nil {
+			return nil, err
 		}
-	case types.EthPendingBlockNumber:
-		if currentBlockNumber > 0 {
-			height = int64(currentBlockNumber)
-		}
-	case types.EthEarliestBlockNumber:
-		height = 1
-	default:
-		if blockNum < 0 {
-			return nil, errors.Errorf("cannot fetch a negative block height: %d", height)
-		}
-		if height > int64(currentBlockNumber) {
-			return nil, nil
-		}
+		height = int64(n)
 	}
-
 	resBlock, err := b.clientCtx.Client.Block(b.ctx, &height)
 	if err != nil {
-		if resBlock, err = b.clientCtx.Client.Block(b.ctx, nil); err != nil {
-			b.logger.Debug("tendermint client failed to get latest block", "height", height, "error", err.Error())
-			return nil, nil
-		}
+		b.logger.Debug("tendermint client failed to get block", "height", height, "error", err.Error())
+		return nil, err
 	}
 
 	if resBlock.Block == nil {
-		b.logger.Debug("GetBlockByNumber block not found", "height", height)
+		b.logger.Debug("GetTendermintBlockByNumber block not found", "height", height)
 		return nil, nil
 	}
 
@@ -232,10 +184,11 @@ func (b *Backend) GetTendermintBlockByHash(blockHash common.Hash) (*tmrpctypes.R
 	resBlock, err := b.clientCtx.Client.BlockByHash(b.ctx, blockHash.Bytes())
 	if err != nil {
 		b.logger.Debug("tendermint client failed to get block", "blockHash", blockHash.Hex(), "error", err.Error())
+		return nil, err
 	}
 
 	if resBlock == nil || resBlock.Block == nil {
-		b.logger.Debug("GetBlockByNumber block not found", "blockHash", blockHash.Hex())
+		b.logger.Debug("GetTendermintBlockByHash block not found", "blockHash", blockHash.Hex())
 		return nil, nil
 	}
 
@@ -264,67 +217,43 @@ func (b *Backend) BlockBloom(height *int64) (ethtypes.Bloom, error) {
 
 // EthBlockFromTendermint returns a JSON-RPC compatible Ethereum block from a given Tendermint block and its block result.
 func (b *Backend) EthBlockFromTendermint(
-	block *tmtypes.Block,
+	resBlock *tmrpctypes.ResultBlock,
 	fullTx bool,
 ) (map[string]interface{}, error) {
 	ethRPCTxs := []interface{}{}
-
-	ctx := types.ContextWithHeight(block.Height)
+	block := resBlock.Block
 
 	baseFee, err := b.BaseFee(block.Height)
 	if err != nil {
 		return nil, err
 	}
 
-	resBlockResult, err := b.clientCtx.Client.BlockResults(ctx, &block.Height)
+	resBlockResult, err := b.clientCtx.Client.BlockResults(b.ctx, &block.Height)
 	if err != nil {
 		return nil, err
 	}
 
-	txResults := resBlockResult.TxsResults
-	txIndex := uint64(0)
-
-	for i, txBz := range block.Txs {
-		tx, err := b.clientCtx.TxConfig.TxDecoder()(txBz)
-		if err != nil {
-			b.logger.Debug("failed to decode transaction in block", "height", block.Height, "error", err.Error())
+	msgs := b.GetEthereumMsgsFromTendermintBlock(resBlock, resBlockResult)
+	for txIndex, ethMsg := range msgs {
+		if !fullTx {
+			hash := common.HexToHash(ethMsg.Hash)
+			ethRPCTxs = append(ethRPCTxs, hash)
 			continue
 		}
 
-		for _, msg := range tx.GetMsgs() {
-			ethMsg, ok := msg.(*evmtypes.MsgEthereumTx)
-			if !ok {
-				continue
-			}
-
-			tx := ethMsg.AsTransaction()
-
-			// check tx exists on EVM by cross checking with blockResults
-			if txResults[i].Code != 0 {
-				b.logger.Debug("invalid tx result code", "hash", tx.Hash().Hex())
-				continue
-			}
-
-			if !fullTx {
-				hash := tx.Hash()
-				ethRPCTxs = append(ethRPCTxs, hash)
-				continue
-			}
-
-			rpcTx, err := types.NewRPCTransaction(
-				tx,
-				common.BytesToHash(block.Hash()),
-				uint64(block.Height),
-				txIndex,
-				baseFee,
-			)
-			if err != nil {
-				b.logger.Debug("NewTransactionFromData for receipt failed", "hash", tx.Hash().Hex(), "error", err.Error())
-				continue
-			}
-			ethRPCTxs = append(ethRPCTxs, rpcTx)
-			txIndex++
+		tx := ethMsg.AsTransaction()
+		rpcTx, err := types.NewRPCTransaction(
+			tx,
+			common.BytesToHash(block.Hash()),
+			uint64(block.Height),
+			uint64(txIndex),
+			baseFee,
+		)
+		if err != nil {
+			b.logger.Debug("NewTransactionFromData for receipt failed", "hash", tx.Hash().Hex(), "error", err.Error())
+			continue
 		}
+		ethRPCTxs = append(ethRPCTxs, rpcTx)
 	}
 
 	bloom, err := b.BlockBloom(&block.Height)
@@ -336,6 +265,7 @@ func (b *Backend) EthBlockFromTendermint(
 		ConsAddress: sdk.ConsAddress(block.Header.ProposerAddress).String(),
 	}
 
+	ctx := types.ContextWithHeight(block.Height)
 	res, err := b.queryClient.ValidatorAccount(ctx, req)
 	if err != nil {
 		b.logger.Debug(
@@ -361,9 +291,9 @@ func (b *Backend) EthBlockFromTendermint(
 
 	gasUsed := uint64(0)
 
-	for _, txsResult := range txResults {
+	for _, txsResult := range resBlockResult.TxsResults {
 		// workaround for cosmos-sdk bug. https://github.com/cosmos/cosmos-sdk/issues/10832
-		if txsResult.GetCode() == 11 && txsResult.GetLog() == "no block gas left to run tx: out of gas" {
+		if ShouldIgnoreGasUsed(txsResult) {
 			// block gas limit has exceeded, other txs must have failed with same reason.
 			break
 		}
@@ -386,31 +316,13 @@ func (b *Backend) CurrentHeader() *ethtypes.Header {
 
 // HeaderByNumber returns the block header identified by height.
 func (b *Backend) HeaderByNumber(blockNum types.BlockNumber) (*ethtypes.Header, error) {
-	height := blockNum.Int64()
-
-	switch blockNum {
-	case types.EthLatestBlockNumber:
-		currentBlockNumber, _ := b.BlockNumber()
-		if currentBlockNumber > 0 {
-			height = int64(currentBlockNumber)
-		}
-	case types.EthPendingBlockNumber:
-		currentBlockNumber, _ := b.BlockNumber()
-		if currentBlockNumber > 0 {
-			height = int64(currentBlockNumber)
-		}
-	case types.EthEarliestBlockNumber:
-		height = 1
-	default:
-		if blockNum < 0 {
-			return nil, errors.Errorf("incorrect block height: %d", height)
-		}
+	resBlock, err := b.GetTendermintBlockByNumber(blockNum)
+	if err != nil {
+		return nil, err
 	}
 
-	resBlock, err := b.clientCtx.Client.Block(b.ctx, &height)
-	if err != nil {
-		b.logger.Debug("HeaderByNumber failed")
-		return nil, err
+	if resBlock == nil {
+		return nil, errors.Errorf("block not found for height %d", blockNum)
 	}
 
 	bloom, err := b.BlockBloom(&resBlock.Block.Height)
@@ -430,13 +342,11 @@ func (b *Backend) HeaderByNumber(blockNum types.BlockNumber) (*ethtypes.Header, 
 
 // HeaderByHash returns the block header identified by hash.
 func (b *Backend) HeaderByHash(blockHash common.Hash) (*ethtypes.Header, error) {
-	resBlock, err := b.clientCtx.Client.BlockByHash(b.ctx, blockHash.Bytes())
+	resBlock, err := b.GetTendermintBlockByHash(blockHash)
 	if err != nil {
-		b.logger.Debug("HeaderByHash failed", "hash", blockHash.Hex())
 		return nil, err
 	}
-
-	if resBlock == nil || resBlock.Block == nil {
+	if resBlock == nil {
 		return nil, errors.Errorf("block not found for hash %s", blockHash.Hex())
 	}
 
@@ -498,36 +408,15 @@ func (b *Backend) GetLogsByHeight(height *int64) ([][]*ethtypes.Log, error) {
 
 // GetLogs returns all the logs from all the ethereum transactions in a block.
 func (b *Backend) GetLogs(hash common.Hash) ([][]*ethtypes.Log, error) {
-	block, err := b.clientCtx.Client.BlockByHash(b.ctx, hash.Bytes())
+	resBlock, err := b.GetTendermintBlockByHash(hash)
 	if err != nil {
 		return nil, err
 	}
-	return b.GetLogsByHeight(&block.Block.Header.Height)
-}
-
-func (b *Backend) GetLogsByNumber(blockNum types.BlockNumber) ([][]*ethtypes.Log, error) {
-	height := blockNum.Int64()
-
-	switch blockNum {
-	case types.EthLatestBlockNumber:
-		currentBlockNumber, _ := b.BlockNumber()
-		if currentBlockNumber > 0 {
-			height = int64(currentBlockNumber)
-		}
-	case types.EthPendingBlockNumber:
-		currentBlockNumber, _ := b.BlockNumber()
-		if currentBlockNumber > 0 {
-			height = int64(currentBlockNumber)
-		}
-	case types.EthEarliestBlockNumber:
-		height = 1
-	default:
-		if blockNum < 0 {
-			return nil, errors.Errorf("incorrect block height: %d", height)
-		}
+	if resBlock == nil {
+		return nil, errors.Errorf("block not found for hash %s", hash)
 	}
 
-	return b.GetLogsByHeight(&height)
+	return b.GetLogsByHeight(&resBlock.Block.Header.Height)
 }
 
 // BloomStatus returns the BloomBitsBlocks and the number of processed sections maintained
@@ -565,6 +454,7 @@ func (b *Backend) GetCoinbase() (sdk.AccAddress, error) {
 func (b *Backend) GetTransactionByHash(txHash common.Hash) (*types.RPCTransaction, error) {
 	res, err := b.GetTxByEthHash(txHash)
 	hexTx := txHash.Hex()
+
 	if err != nil {
 		// try to find tx in mempool
 		txs, err := b.PendingTransactions()
@@ -586,7 +476,7 @@ func (b *Backend) GetTransactionByHash(txHash common.Hash) (*types.RPCTransactio
 					common.Hash{},
 					uint64(0),
 					uint64(0),
-					b.chainID,
+					nil,
 				)
 				if err != nil {
 					return nil, err
@@ -599,12 +489,17 @@ func (b *Backend) GetTransactionByHash(txHash common.Hash) (*types.RPCTransactio
 		return nil, nil
 	}
 
-	if res.TxResult.Code != 0 {
+	if !TxSuccessOrExceedsBlockGasLimit(&res.TxResult) {
 		return nil, errors.New("invalid ethereum tx")
 	}
 
-	msgIndex, attrs := types.FindTxAttributes(res.TxResult.Events, hexTx)
-	if msgIndex < 0 {
+	parsedTxs, err := types.ParseTxResult(&res.TxResult)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse tx events: %s", hexTx)
+	}
+
+	parsedTx := parsedTxs.GetTxByHash(txHash)
+	if parsedTx == nil {
 		return nil, fmt.Errorf("ethereum tx not found in msgs: %s", hexTx)
 	}
 
@@ -614,7 +509,7 @@ func (b *Backend) GetTransactionByHash(txHash common.Hash) (*types.RPCTransactio
 	}
 
 	// the `msgIndex` is inferred from tx events, should be within the bound.
-	msg, ok := tx.GetMsgs()[msgIndex].(*evmtypes.MsgEthereumTx)
+	msg, ok := tx.GetMsgs()[parsedTx.MsgIndex].(*evmtypes.MsgEthereumTx)
 	if !ok {
 		return nil, errors.New("invalid ethereum tx")
 	}
@@ -625,12 +520,7 @@ func (b *Backend) GetTransactionByHash(txHash common.Hash) (*types.RPCTransactio
 		return nil, err
 	}
 
-	// Try to find txIndex from events
-	found := false
-	txIndex, err := types.GetUint64Attribute(attrs, evmtypes.AttributeKeyTxIndex)
-	if err == nil {
-		found = true
-	} else {
+	if parsedTx.EthTxIndex == -1 {
 		// Fallback to find tx index by iterating all valid eth transactions
 		blockRes, err := b.clientCtx.Client.BlockResults(b.ctx, &block.Block.Height)
 		if err != nil {
@@ -639,22 +529,26 @@ func (b *Backend) GetTransactionByHash(txHash common.Hash) (*types.RPCTransactio
 		msgs := b.GetEthereumMsgsFromTendermintBlock(block, blockRes)
 		for i := range msgs {
 			if msgs[i].Hash == hexTx {
-				txIndex = uint64(i)
-				found = true
+				parsedTx.EthTxIndex = int64(i)
 				break
 			}
 		}
 	}
-	if !found {
+	if parsedTx.EthTxIndex == -1 {
 		return nil, errors.New("can't find index of ethereum tx")
+	}
+
+	baseFee, err := b.BaseFee(block.Block.Height)
+	if err != nil {
+		return nil, err
 	}
 
 	return types.NewTransactionFromMsg(
 		msg,
 		common.BytesToHash(block.BlockID.Hash.Bytes()),
 		uint64(res.Height),
-		txIndex,
-		b.chainID,
+		uint64(parsedTx.EthTxIndex),
+		baseFee,
 	)
 }
 
@@ -924,6 +818,15 @@ func (b *Backend) BaseFee(height int64) (*big.Int, error) {
 	return res.BaseFee.BigInt(), nil
 }
 
+// GlobalMinGasPrice returns MinGasPrice param from FeeMarket
+func (b *Backend) GlobalMinGasPrice() (sdk.Dec, error) {
+	res, err := b.queryClient.FeeMarket.Params(b.ctx, &feemarkettypes.QueryParamsRequest{})
+	if err != nil {
+		return sdk.ZeroDec(), err
+	}
+	return res.Params.MinGasPrice, nil
+}
+
 // FeeHistory returns data relevant for fee estimation based on the specified range of blocks.
 func (b *Backend) FeeHistory(
 	userBlockCount rpc.DecimalOrHex, // number blocks to fetch, maximum is 100
@@ -1021,21 +924,23 @@ func (b *Backend) FeeHistory(
 
 // GetEthereumMsgsFromTendermintBlock returns all real MsgEthereumTxs from a Tendermint block.
 // It also ensures consistency over the correct txs indexes across RPC endpoints
-func (b *Backend) GetEthereumMsgsFromTendermintBlock(block *tmrpctypes.ResultBlock, blockRes *tmrpctypes.ResultBlockResults) []*evmtypes.MsgEthereumTx {
+func (b *Backend) GetEthereumMsgsFromTendermintBlock(resBlock *tmrpctypes.ResultBlock, blockRes *tmrpctypes.ResultBlockResults) []*evmtypes.MsgEthereumTx {
 	var result []*evmtypes.MsgEthereumTx
+	block := resBlock.Block
 
 	txResults := blockRes.TxsResults
 
-	for i, tx := range block.Block.Txs {
+	for i, tx := range block.Txs {
 		// check tx exists on EVM by cross checking with blockResults
-		if txResults[i].Code != 0 {
+		// include the tx that exceeds block gas limit
+		if !TxSuccessOrExceedsBlockGasLimit(txResults[i]) {
 			b.logger.Debug("invalid tx result code", "cosmos-hash", hexutil.Encode(tx.Hash()))
 			continue
 		}
 
 		tx, err := b.clientCtx.TxConfig.TxDecoder()(tx)
 		if err != nil {
-			b.logger.Debug("failed to decode transaction in block", "height", block.Block.Height, "error", err.Error())
+			b.logger.Debug("failed to decode transaction in block", "height", block.Height, "error", err.Error())
 			continue
 		}
 

@@ -26,7 +26,6 @@ FROM debian
 RUN apt-get update
 RUN apt-get install jq -y
 
-
 WORKDIR /root
 
 COPY docker/entrypoint-debug.sh .

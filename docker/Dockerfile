@@ -16,6 +16,7 @@ RUN go mod download
 # Make the binary
 RUN env GOOS=$TARGETOS GOARCH=$TARGETARCH make build 
 
+
 # Final image
 FROM debian
 

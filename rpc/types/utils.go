@@ -3,10 +3,8 @@ package types
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"fmt"
 	"math/big"
-	"strconv"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -132,37 +130,6 @@ func FormatBlock(
 	return result
 }
 
-type DataError interface {
-	Error() string          // returns the message
-	ErrorData() interface{} // returns the error data
-}
-
-type dataError struct {
-	msg  string
-	data string
-}
-
-func (d *dataError) Error() string {
-	return d.msg
-}
-
-func (d *dataError) ErrorData() interface{} {
-	return d.data
-}
-
-type SDKTxLogs struct {
-	Log string `json:"log"`
-}
-
-const LogRevertedFlag = "transaction reverted"
-
-func ErrRevertedWith(data []byte) DataError {
-	return &dataError{
-		msg:  "VM execution error.",
-		data: fmt.Sprintf("0x%s", hex.EncodeToString(data)),
-	}
-}
-
 // NewTransactionFromMsg returns a transaction that will serialize to the RPC
 // representation, with the given location metadata set (if available).
 func NewTransactionFromMsg(
@@ -253,107 +220,4 @@ func BaseFeeFromEvents(events []abci.Event) *big.Int {
 		}
 	}
 	return nil
-}
-
-// FindTxAttributes returns the msg index of the eth tx in cosmos tx, and the attributes,
-// returns -1 and nil if not found.
-func FindTxAttributes(events []abci.Event, txHash string) (int, map[string]string) {
-	msgIndex := -1
-	for _, event := range events {
-		if event.Type != evmtypes.EventTypeEthereumTx {
-			continue
-		}
-
-		msgIndex++
-
-		value := FindAttribute(event.Attributes, []byte(evmtypes.AttributeKeyEthereumTxHash))
-		if !bytes.Equal(value, []byte(txHash)) {
-			continue
-		}
-
-		// found, convert attributes to map for later lookup
-		attrs := make(map[string]string, len(event.Attributes))
-		for _, attr := range event.Attributes {
-			attrs[string(attr.Key)] = string(attr.Value)
-		}
-		return msgIndex, attrs
-	}
-	// not found
-	return -1, nil
-}
-
-// FindTxAttributesByIndex search the msg in tx events by txIndex
-// returns the msgIndex, returns -1 if not found.
-func FindTxAttributesByIndex(events []abci.Event, txIndex uint64) int {
-	strIndex := []byte(strconv.FormatUint(txIndex, 10))
-	txIndexKey := []byte(evmtypes.AttributeKeyTxIndex)
-	msgIndex := -1
-	for _, event := range events {
-		if event.Type != evmtypes.EventTypeEthereumTx {
-			continue
-		}
-
-		msgIndex++
-
-		value := FindAttribute(event.Attributes, txIndexKey)
-		if !bytes.Equal(value, strIndex) {
-			continue
-		}
-
-		// found, convert attributes to map for later lookup
-		return msgIndex
-	}
-	// not found
-	return -1
-}
-
-// FindAttribute find event attribute with specified key, if not found returns nil.
-func FindAttribute(attrs []abci.EventAttribute, key []byte) []byte {
-	for _, attr := range attrs {
-		if !bytes.Equal(attr.Key, key) {
-			continue
-		}
-		return attr.Value
-	}
-	return nil
-}
-
-// GetUint64Attribute parses the uint64 value from event attributes
-func GetUint64Attribute(attrs map[string]string, key string) (uint64, error) {
-	value, found := attrs[key]
-	if !found {
-		return 0, fmt.Errorf("tx index attribute not found: %s", key)
-	}
-	var result int64
-	result, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		return 0, err
-	}
-	if result < 0 {
-		return 0, fmt.Errorf("negative tx index: %d", result)
-	}
-	return uint64(result), nil
-}
-
-// AccumulativeGasUsedOfMsg accumulate the gas used by msgs before `msgIndex`.
-func AccumulativeGasUsedOfMsg(events []abci.Event, msgIndex int) (gasUsed uint64) {
-	for _, event := range events {
-		if event.Type != evmtypes.EventTypeEthereumTx {
-			continue
-		}
-
-		if msgIndex < 0 {
-			break
-		}
-		msgIndex--
-
-		value := FindAttribute(event.Attributes, []byte(evmtypes.AttributeKeyTxGasUsed))
-		var result int64
-		result, err := strconv.ParseInt(string(value), 10, 64)
-		if err != nil {
-			continue
-		}
-		gasUsed += uint64(result)
-	}
-	return
 }

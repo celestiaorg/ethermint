@@ -30,8 +30,7 @@ type BackendI interface { // nolint: revive
 // CosmosBackend implements the functionality shared within cosmos namespaces
 // as defined by Wallet Connect V2: https://docs.walletconnect.com/2.0/json-rpc/cosmos.
 // Implemented by Backend.
-type CosmosBackend interface {
-	// TODO: define
+type CosmosBackend interface { // TODO: define
 	// GetAccounts()
 	// SignDirect()
 	// SignAmino()
@@ -69,6 +68,7 @@ type EVMBackend interface {
 	GetTxByTxIndex(height int64, txIndex uint) (*tmrpctypes.ResultTx, error)
 	EstimateGas(args evmtypes.TransactionArgs, blockNrOptional *types.BlockNumber) (hexutil.Uint64, error)
 	BaseFee(height int64) (*big.Int, error)
+	GlobalMinGasPrice() (sdk.Dec, error)
 
 	// Fee API
 	FeeHistory(blockCount rpc.DecimalOrHex, lastBlock rpc.BlockNumber, rewardPercentiles []float64) (*types.FeeHistoryResult, error)

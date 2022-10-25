@@ -15,7 +15,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	evmtypes "github.com/tharsis/ethermint/x/evm/types"
 
-	// . "github.com/onsi/ginkgo"
+	// . "github.com/onsi/ginkgo/v2"
 	// . "github.com/onsi/gomega"
 
 	"github.com/stretchr/testify/suite"
@@ -730,6 +730,8 @@ func (s *IntegrationTestSuite) TestWeb3Sha3() {
 	}
 }
 
+/*
+TODO(jbowen93): https://github.com/celestiaorg/ethermint/issues/12
 func (s *IntegrationTestSuite) TestPendingTransactionFilter() {
 	var (
 		filterID     string
@@ -755,6 +757,7 @@ func (s *IntegrationTestSuite) TestPendingTransactionFilter() {
 	s.Require().NoError(err)
 	s.Require().Equal([]common.Hash{signedTx.Hash()}, filterResult)
 }
+*/
 
 // TODO: add transactionIndex tests once we have OpenRPC interfaces
 func (s *IntegrationTestSuite) TestBatchETHTransactions() {
@@ -835,5 +838,60 @@ func (s *IntegrationTestSuite) TestBatchETHTransactions() {
 	s.Require().Len(txs, ethTxs)
 	for i, tx := range txs {
 		s.Require().Equal(accountNonce+uint64(i)+1, tx.Nonce())
+	}
+}
+
+func (s *IntegrationTestSuite) TestGasConsumptionOnNormalTransfer() {
+	testCases := []struct {
+		name            string
+		gasLimit        uint64
+		expectedGasUsed uint64
+	}{
+		{
+			"gas used is the same as gas limit",
+			21000,
+			21000,
+		},
+		{
+			"gas used is half of Gas limit",
+			70000,
+			35000,
+		},
+		{
+			"gas used is less than half of gasLimit",
+			30000,
+			21000,
+		},
+	}
+
+	recipient := common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec")
+	chainID, err := s.network.Validators[0].JSONRPCClient.ChainID(s.ctx)
+	s.Require().NoError(err)
+	from := common.BytesToAddress(s.network.Validators[0].Address)
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			nonce := s.getAccountNonce(from)
+			s.Require().NoError(err)
+			gasPrice := s.getGasPrice()
+			msgTx := evmtypes.NewTx(
+				chainID,
+				nonce,
+				&recipient,
+				nil,
+				tc.gasLimit,
+				gasPrice,
+				nil, nil,
+				nil,
+				nil,
+			)
+			msgTx.From = from.Hex()
+			err = msgTx.Sign(s.ethSigner, s.network.Validators[0].ClientCtx.Keyring)
+			s.Require().NoError(err)
+			err := s.network.Validators[0].JSONRPCClient.SendTransaction(s.ctx, msgTx.AsTransaction())
+			s.Require().NoError(err)
+			s.waitForTransaction()
+			receipt := s.expectSuccessReceipt(msgTx.AsTransaction().Hash())
+			s.Equal(receipt.GasUsed, tc.expectedGasUsed)
+		})
 	}
 }
