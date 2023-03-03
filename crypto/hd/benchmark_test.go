@@ -7,6 +7,8 @@ import (
 	ethermint "github.com/evmos/ethermint/types"
 )
 
+const mnemonic = "picnic rent average infant boat squirrel federal assault mercy purity very motor fossil wheel verify upset box fresh horse vivid copy predict square regret"
+
 func BenchmarkEthSecp256k1Algo_Derive(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
