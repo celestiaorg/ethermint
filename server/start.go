@@ -359,6 +359,7 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator ty
 		abcicli.NewLocalClient(nil, app),
 		genesis,
 		ctx.Logger,
+		appCreator,
 	)
 	if err != nil {
 		return err
